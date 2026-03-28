@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "WebFetch(domain:sharetrip.net)",
+      "Bash(taskkill //f //im node.exe)"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:gozayaan.com)",
+      "WebFetch(domain:production.gozayaan.com)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(node -e \"require\\(''./src/app''\\); console.log\\(''All modules loaded OK''\\)\")"
+    ]
+  }
+}
