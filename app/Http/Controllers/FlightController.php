@@ -13,14 +13,25 @@ class FlightController extends Controller
     public function search(Request $request)
     {
         $validated = $request->validate([
-            'from_location' => 'required|string|max:100',
-            'to_location' => 'required|string|max:100',
+            'from_location'  => 'required|string|max:10',
+            'to_location'    => 'required|string|max:10',
             'departure_date' => 'required|date',
-            'return_date' => 'nullable|date|after_or_equal:departure_date',
-            'passengers' => 'required|integer|min:1|max:10',
+            'return_date'    => 'nullable|date|after_or_equal:departure_date',
+            'adults'         => 'required|integer|min:1|max:9',
+            'children'       => 'nullable|integer|min:0|max:9',
+            'infants'        => 'nullable|integer|min:0|max:9',
+            'cabin_class'    => 'nullable|string|in:Economy,Business,First',
+            'trip_type'      => 'nullable|string|in:one-way,round-way,multi-city',
         ]);
 
-        // Store the search data in the session
+        // Normalise optional fields
+        $validated['children']    = $validated['children']    ?? 0;
+        $validated['infants']     = $validated['infants']     ?? 0;
+        $validated['cabin_class'] = $validated['cabin_class'] ?? 'Economy';
+        $validated['trip_type']   = $validated['trip_type']   ?? 'one-way';
+        // Keep a combined passenger count for backward-compat
+        $validated['passengers']  = $validated['adults'] + $validated['children'] + $validated['infants'];
+
         $request->session()->put('flight_search', $validated);
 
         return redirect('/results');
@@ -53,10 +64,14 @@ class FlightController extends Controller
                 'from'       => $searchData['from_location'],
                 'to'         => $searchData['to_location'],
                 'date'       => $searchData['departure_date'],
-                'adult'      => $searchData['passengers'],
+                'adult'      => $searchData['adults']   ?? $searchData['passengers'],
+                'child'      => $searchData['children'] ?? 0,
+                'infant'     => $searchData['infants']  ?? 0,
+                'cabin'      => $searchData['cabin_class'] ?? 'Economy',
+                'tripType'   => $searchData['trip_type']   ?? 'one-way',
                 'provider'   => $provider,
                 'returnDate' => $searchData['return_date'] ?? null,
-                'search_id'  => $request->query('search_id')
+                'search_id'  => $request->query('search_id'),
             ]);
 
             if ($response->failed()) {
