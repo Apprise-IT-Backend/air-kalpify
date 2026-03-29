@@ -7,8 +7,6 @@ use Carbon\Carbon;
 
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
-
 
 class FlightController extends Controller
 {
@@ -61,34 +59,6 @@ class FlightController extends Controller
             return response()->json(['success' => false, 'error' => 'No search session found.'], 400);
         }
 
-        $cacheKey = 'flights_' . $provider . '_' . md5(json_encode([
-            'from'       => $searchData['from_location'],
-            'to'         => $searchData['to_location'],
-            'date'       => $searchData['departure_date'],
-            'returnDate' => $searchData['return_date'] ?? null,
-            'adult'      => $searchData['adults']   ?? $searchData['passengers'],
-            'child'      => $searchData['children'] ?? 0,
-            'infant'     => $searchData['infants']  ?? 0,
-            'cabin'      => $searchData['cabin_class'] ?? 'Economy',
-            'tripType'   => $searchData['trip_type']   ?? 'one-way',
-        ]));
-
-        // Check if we have any cached data for this search
-        if ($cachedData = Cache::get($cacheKey)) {
-            // If the cached data is completed, return it immediately
-            // OR if the request does NOT have a search_id, return the partial results to start with
-            if ($cachedData['isCompleted'] || !$request->query('search_id')) {
-                return response()->json([
-                    'success'     => true,
-                    'provider'    => $provider,
-                    'flights'     => $cachedData['flights'],
-                    'search_id'   => $cachedData['search_id'] ?? null,
-                    'isCompleted' => $cachedData['isCompleted'],
-                    'is_cached'   => true
-                ]);
-            }
-        }
-
         try {
             $response = Http::timeout(60)->get('http://localhost:3000/api/flights', [
                 'from'       => $searchData['from_location'],
@@ -111,22 +81,12 @@ class FlightController extends Controller
             $apiData = $response->json();
             $flights = $this->transformApiResponse($apiData, $provider);
 
-            $isCompleted = $apiData['isCompleted'] ?? false;
-            
-            // Cache the result (even if partial) for 30 minutes
-            // We store the flights, search_id, and completion status
-            Cache::put($cacheKey, [
-                'flights'     => $flights,
-                'search_id'   => $apiData['search_id'] ?? null,
-                'isCompleted' => $isCompleted
-            ], now()->addMinutes(30));
-
             return response()->json([
                 'success'     => true,
                 'provider'    => $provider,
                 'flights'     => $flights,
                 'search_id'   => $apiData['search_id'] ?? null,
-                'isCompleted' => $isCompleted
+                'isCompleted' => $apiData['isCompleted'] ?? false
             ]);
 
         } catch (\Exception $e) {
