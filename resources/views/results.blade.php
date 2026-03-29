@@ -1120,6 +1120,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const btn = clone.querySelector('.select-btn');
             btn.style.background = f.ota_color;
 
+            // Handle booking redirects
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (f.provider === 'sharetrip' && f.search_id && f.sequence_code) {
+                    const bookingUrl = `https://sharetrip.net/flight-booking?searchId=${encodeURIComponent(f.search_id)}&sequenceCode=${encodeURIComponent(f.sequence_code)}`;
+                    window.open(bookingUrl, '_blank');
+                } else if (f.provider === 'gozayaan' && f.search_id && f.fare_id) {
+                    // GoZayaan works better loading the list with parameters to init session
+                    const listUrl = `https://gozayaan.com/flight/list?search_id=${encodeURIComponent(f.search_id)}&fare_id=${encodeURIComponent(f.fare_id)}`;
+                    window.open(listUrl, '_blank');
+                } else {
+                    alert('Booking for ' + f.ota_name + ' is coming soon!');
+                }
+            });
+
             clone.querySelector('.departure-leg-container').appendChild(buildLeg(f, false, legTpl));
 
             if (f.is_round_trip && f.return_leg) {

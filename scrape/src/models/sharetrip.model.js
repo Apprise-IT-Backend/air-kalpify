@@ -54,6 +54,7 @@ function formatFlightData(raw, params = {}) {
       discountedPrice: promo?.finalPriceAfterDiscount || null,
       coupon: promo?.couponCode || null,
       currency,
+      sequenceCode: flight.sequenceCode, // Add sequenceCode for booking
     };
   });
 

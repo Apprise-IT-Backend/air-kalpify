@@ -109,6 +109,7 @@ function formatFlightData(raw, params = {}) {
       return: returnLeg,
       totalPrice: fare.total_fare_amount,
       currency: fare.currency,
+      fare_id: fare.id, // Include fare_id for booking
     });
 
     return acc;

@@ -175,6 +175,10 @@ class FlightController extends Controller
                 'ota_color'        => $otaColor,
                 'is_round_trip'    => !is_null($returnLeg),
                 'return_leg'       => $returnLeg,
+                'search_id'        => $apiData['search_id'] ?? null,
+                'fare_id'          => $flight['fare_id'] ?? null,
+                'sequence_code'    => $flight['sequenceCode'] ?? null,
+                'provider'         => $providerKey,
             ];
         }
 
