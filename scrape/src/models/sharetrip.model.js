@@ -58,7 +58,11 @@ function formatFlightData(raw, params = {}) {
   });
 
   flights.sort((a, b) => a.totalPrice - b.totalPrice);
-  return { flights };
+  return { 
+    flights, 
+    search_id: data.searchId || null, 
+    isCompleted: !!data.isCompleted 
+  };
 }
 
 module.exports = { formatFlightData };

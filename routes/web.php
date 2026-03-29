@@ -8,5 +8,6 @@ use App\Http\Controllers\AlertController;
 Route::get('/', [HomeController::class, 'index']);
 Route::post('/search', [FlightController::class, 'search']);
 Route::get('/results', [FlightController::class, 'results']);
+Route::get('/api/search-flights/{provider}', [FlightController::class, 'fetchProvider']);
 
 Route::post('/alerts', [AlertController::class, 'store']);

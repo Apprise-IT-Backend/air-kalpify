@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
+
+use Illuminate\Support\Facades\Http;
+
 class FlightController extends Controller
 {
     public function search(Request $request)
@@ -31,9 +34,164 @@ class FlightController extends Controller
             return redirect('/')->withErrors(['error' => 'Please perform a search first.']);
         }
 
-        $otaFlights = $this->generateDynamicFlights($searchData);
+        $providers = ['gozayaan', 'sharetrip'];
 
-        return view('results', compact('searchData', 'otaFlights'));
+        // Return the view immediately without fetching
+        return view('results', compact('searchData', 'providers'));
+    }
+
+    public function fetchProvider(Request $request, $provider)
+    {
+        $searchData = $request->session()->get('flight_search');
+
+        if (!$searchData) {
+            return response()->json(['success' => false, 'error' => 'No search session found.'], 400);
+        }
+
+        try {
+            $response = Http::timeout(60)->get('http://localhost:3000/api/flights', [
+                'from'       => $searchData['from_location'],
+                'to'         => $searchData['to_location'],
+                'date'       => $searchData['departure_date'],
+                'adult'      => $searchData['passengers'],
+                'provider'   => $provider,
+                'returnDate' => $searchData['return_date'] ?? null,
+                'search_id'  => $request->query('search_id')
+            ]);
+
+            if ($response->failed()) {
+                return response()->json(['success' => false, 'error' => 'Failed to fetch from ' . $provider], 500);
+            }
+
+            $apiData = $response->json();
+            $flights = $this->transformApiResponse($apiData, $provider);
+
+            return response()->json([
+                'success'     => true,
+                'provider'    => $provider,
+                'flights'     => $flights,
+                'search_id'   => $apiData['search_id'] ?? null,
+                'isCompleted' => $apiData['isCompleted'] ?? false
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function transformApiResponse($apiData, $provider)
+    {
+        $flights = $apiData['flights'] ?? [];
+        $flatFlights = [];
+
+        $providerKey = strtolower($provider);
+        $otaName = $this->getProviderName($providerKey);
+        $otaColor = $this->getProviderColor($providerKey);
+
+        foreach ($flights as $flight) {
+            
+            // --- DEPARTURE ---
+            $depTime = $flight['departure']['departure'] ?? '';
+            $arrTime = $flight['departure']['arrival'] ?? '';
+            try {
+                $depTimeParsed = Carbon::parse($depTime)->format('h:i A');
+                $arrTimeParsed = Carbon::parse($arrTime)->format('h:i A');
+            } catch (\Exception $e) {
+                $depTimeParsed = $depTime; $arrTimeParsed = $arrTime;
+            }
+
+            $durationStr = $flight['departure']['duration'] ?? '0h 0m';
+            $durationMinutes = 0;
+            if (preg_match('/(\d+)h/', $durationStr, $m)) $durationMinutes += $m[1] * 60;
+            if (preg_match('/(\d+)m/', $durationStr, $m)) $durationMinutes += $m[1];
+
+            $stopsStr = $flight['departure']['stops'] ?? 'Non Stop';
+            $stopsCount = ($stopsStr === 'Non Stop' || $stopsStr === 'Direct') ? 0 : (int)$stopsStr;
+
+            // --- RETURN (Optional) ---
+            $returnLeg = null;
+            if (isset($flight['return']['departure']) && !empty($flight['return']['departure'])) {
+                $retDepTime = $flight['return']['departure'] ?? '';
+                $retArrTime = $flight['return']['arrival'] ?? '';
+                try {
+                    $retDepTimeParsed = Carbon::parse($retDepTime)->format('h:i A');
+                    $retArrTimeParsed = Carbon::parse($retArrTime)->format('h:i A');
+                } catch (\Exception $e) {
+                    $retDepTimeParsed = $retDepTime; $retArrTimeParsed = $retArrTime;
+                }
+
+                $retDurationStr = $flight['return']['duration'] ?? '0h 0m';
+                $retDurationMinutes = 0;
+                if (preg_match('/(\d+)h/', $retDurationStr, $m)) $retDurationMinutes += $m[1] * 60;
+                if (preg_match('/(\d+)m/', $retDurationStr, $m)) $retDurationMinutes += $m[1];
+
+                $returnLeg = [
+                    'airline'        => $flight['return']['airline'] ?? ($flight['departure']['airline'] ?? 'Unknown'),
+                    'airline_logo'   => $flight['return']['logo'] ?? ($flight['departure']['logo'] ?? null),
+                    'departure_time' => $retDepTimeParsed,
+                    'arrival_time'   => $retArrTimeParsed,
+                    'duration'       => $retDurationStr,
+                    'stops'          => $flight['return']['stops'] ?? 'Non Stop',
+                    'origin'         => $flight['return']['origin'] ?? null,
+                    'destination'    => $flight['return']['destination'] ?? null,
+                ];
+                
+                // Add return duration to total for sorting/best score
+                $durationMinutes += $retDurationMinutes;
+            }
+
+            $price = $flight['discountedPrice'] ?? $flight['totalPrice'] ?? 0;
+
+            $flatFlights[] = [
+                'airline'          => $flight['departure']['airline'] ?? 'Unknown Airline',
+                'airline_logo'     => $flight['departure']['logo'] ?? null,
+                'departure_time'   => $depTimeParsed,
+                'arrival_time'     => $arrTimeParsed,
+                'duration'         => $durationStr,
+                'duration_minutes' => $durationMinutes,
+                'price'            => $price,
+                'currency'         => $flight['currency'] ?? 'BDT',
+                'stops'            => $stopsStr,
+                'stops_count'      => $stopsCount,
+                'ota_name'         => $otaName,
+                'ota_color'        => $otaColor,
+                'is_round_trip'    => !is_null($returnLeg),
+                'return_leg'       => $returnLeg,
+            ];
+        }
+
+        // Sort by cheapest first
+        usort($flatFlights, function ($a, $b) {
+            return $a['price'] <=> $b['price'];
+        });
+        
+        return $flatFlights;
+    }
+
+    private function getProviderName($key)
+    {
+        $names = [
+            'gozayaan'     => 'GoZayaan',
+            'sharetrip'    => 'ShareTrip',
+            'flightexpert' => 'FlightExpert',
+            'airtickets'   => 'AirTickets',
+        ];
+        return $names[$key] ?? ucfirst($key);
+    }
+
+    private function getProviderColor($provider)
+    {
+        $colors = [
+            'gozayaan'     => '#00b4d8',
+            'sharetrip'    => '#f77f00',
+            'flightexpert' => '#06d6a0',
+            'airtickets'   => '#7209b7',
+        ];
+        
+        return $colors[strtolower($provider)] ?? '#6c757d';
     }
 
     private function generateDynamicFlights($searchData)
@@ -44,7 +202,6 @@ class FlightController extends Controller
         $seed = crc32($originCode . $destCode . $searchData['departure_date']);
         srand($seed);
 
-        // OTA list with brand colours
         $otas = [
             ['name' => 'GoZayaan',    'color' => '#00b4d8'],
             ['name' => 'ShareTrip',   'color' => '#f77f00'],
@@ -61,11 +218,10 @@ class FlightController extends Controller
         $basePrice          = 100 + ($routeFactor * 10);
         $baseDurationMinutes = 60 + ($routeFactor * 40);
 
-        $otaFlights = [];
+        $allFlights = [];
 
         foreach ($otas as $ota) {
-            $flights = [];
-            $numFlights = rand(1, 3); // max 3 per OTA
+            $numFlights = rand(1, 3);
 
             for ($i = 0; $i < $numFlights; $i++) {
                 $airline = $baseAirlines[array_rand($baseAirlines)];
@@ -87,27 +243,24 @@ class FlightController extends Controller
                 $hours   = floor($durationMinutes / 60);
                 $minutes = $durationMinutes % 60;
 
-                $flights[] = [
+                $allFlights[] = [
                     'airline'        => $airline,
                     'departure_time' => $departureTime->format('h:i A'),
                     'arrival_time'   => $arrivalTime->format('h:i A'),
                     'duration'       => $hours . 'h ' . ($minutes > 0 ? $minutes . 'm' : ''),
                     'price'          => round($finalPrice, 2),
                     'stops'          => rand(0, 10) > 8 ? '1 Stop' : 'Direct',
+                    'ota_name'       => $ota['name'],
+                    'ota_color'      => $ota['color'],
+                    'currency'       => 'USD', // Dynamic generator used USD before potentially
                 ];
             }
-
-            // Sort each OTA's flights cheapest first
-            usort($flights, fn($a, $b) => $a['price'] <=> $b['price']);
-
-            $otaFlights[] = [
-                'ota'     => $ota['name'],
-                'color'   => $ota['color'],
-                'flights' => $flights,
-            ];
         }
 
+        // Sort by cheapest first
+        usort($allFlights, fn($a, $b) => $a['price'] <=> $b['price']);
+
         srand();
-        return $otaFlights;
+        return $allFlights;
     }
 }

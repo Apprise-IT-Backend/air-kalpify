@@ -25,6 +25,7 @@ function parseParams(query) {
     child_age: query.child_age || "",
     infant: query.infant || 0,
     cabin_class: query.cabin_class || "Economy",
+    search_id: query.search_id || null,
   };
 }
 
@@ -33,11 +34,17 @@ async function scrapeProvider(name, params) {
   if (!provider) return null;
 
   const tripType = params.returnDate ? "Round Trip" : "One Way";
-  console.log(`[${name}] Scraping ${tripType} flights...`);
+  console.log(`[${name}] Scraping ${tripType} flights (ID: ${params.search_id || 'NEW'})...`);
 
   const raw = await provider.scrape(params);
   const data = provider.format(raw, params);
-  return { provider: name, flights: data.flights || [] };
+  
+  return { 
+    provider: name, 
+    flights: data.flights || [],
+    search_id: data.search_id,
+    isCompleted: data.isCompleted
+  };
 }
 
 async function getFlights(req, res) {

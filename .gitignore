@@ -1,6 +1,7 @@
 # Laravel
 /vendor/
 /node_modules/
+/scrape/node_modules/
 
 # Environment
 .env

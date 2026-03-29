@@ -50,18 +50,32 @@ function buildLookups(result) {
 
 function buildLegEntry(legHash, lookups) {
   const { carrierMap, legMap } = lookups;
-  const leg = legMap[legHash] || {};
+  const leg = legMap[legHash] || null;
+
+  if (!leg) {
+    return {
+      airline: "Unknown",
+      logo: null,
+      departure: null,
+      arrival: null,
+      origin: null,
+      destination: null,
+      duration: "Unknown",
+      stops: "Unknown",
+    };
+  }
+
   const carrier = carrierMap[leg.carrier] || {};
 
   return {
-    airline: carrier.name || leg.carrier,
+    airline: carrier.name || leg.carrier || "Unknown",
     logo: carrier.logo || null,
-    departure: leg.departure,
-    arrival: leg.arrival,
-    origin: leg.origin,
-    destination: leg.destination,
-    duration: leg.duration,
-    stops: leg.stops,
+    departure: leg.departure || null,
+    arrival: leg.arrival || null,
+    origin: leg.origin || null,
+    destination: leg.destination || null,
+    duration: leg.duration || "Unknown",
+    stops: leg.stops || "Non Stop",
   };
 }
 
@@ -72,20 +86,42 @@ function formatFlightData(raw, params = {}) {
   const lookups = buildLookups(result);
   const isRoundTrip = !!params.returnDate;
 
-  const flights = (result.fares || []).map((fare) => {
+  const flights = (result.fares || []).reduce((acc, fare) => {
     const [depHash, retHash] = fare.leg_hashes || [];
-    return {
-      departure: buildLegEntry(depHash, lookups),
-      return: isRoundTrip ? buildLegEntry(retHash, lookups) : null,
+    
+    // Skip if missing departure hash
+    if (!depHash) return acc;
+
+    const departure = buildLegEntry(depHash, lookups);
+    
+    // For round trips, validate return leg exists in data
+    let returnLeg = null;
+    if (isRoundTrip) {
+      if (!retHash || !lookups.legMap[retHash]) {
+        // Skip incomplete round trip result
+        return acc;
+      }
+      returnLeg = buildLegEntry(retHash, lookups);
+    }
+
+    acc.push({
+      departure,
+      return: returnLeg,
       totalPrice: fare.total_fare_amount,
       currency: fare.currency,
-    };
-  });
+    });
+
+    return acc;
+  }, []);
 
   // Sort by total price
   flights.sort((a, b) => a.totalPrice - b.totalPrice);
 
-  return { flights };
+  return { 
+    flights, 
+    search_id: result.search_id || null, 
+    isCompleted: !!result.isCompleted 
+  };
 }
 
 module.exports = { formatFlightData };
