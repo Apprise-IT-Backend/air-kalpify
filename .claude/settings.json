@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -r \":*)",
+      "Bash(find /c/Users/MOU/OneDrive/Documents/GitHub/air-ticket -type f -name *rovider*)",
+      "Bash(find /c/Users/MOU/OneDrive/Documents/GitHub/air-ticket/app -name *[Ss]ervice* -o -name *[Pp]rovider*)",
+      "WebFetch(domain:fo-usba.ttinteractive.com)"
+    ]
+  }
+}
