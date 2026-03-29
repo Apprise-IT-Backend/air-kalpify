@@ -79,8 +79,9 @@
         text-align: center;
         color: white;
         max-width: 780px;
-        padding: -1px 20px;
+        padding: 0px 20px;
         margin-bottom: 48px;
+        margin-top: 80px;
     }
 
     .hero-badge {
