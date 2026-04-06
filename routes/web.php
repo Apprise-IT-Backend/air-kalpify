@@ -9,5 +9,6 @@ Route::get('/', [HomeController::class, 'index']);
 Route::post('/search', [FlightController::class, 'search']);
 Route::get('/results', [FlightController::class, 'results']);
 Route::get('/api/search-flights/{provider}', [FlightController::class, 'fetchProvider']);
+Route::get('/api/db-flights/{provider}', [FlightController::class, 'fetchProviderFromDb']);
 
 Route::post('/alerts', [AlertController::class, 'store']);

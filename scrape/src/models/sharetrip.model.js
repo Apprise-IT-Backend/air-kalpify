@@ -30,12 +30,16 @@ function buildLegEntry(leg) {
 }
 
 function formatFlightData(raw, params = {}) {
-  if (!raw || !raw.response) return { flights: [] };
+  const defaultResult = { 
+    flights: [], 
+    search_id: raw?.response?.searchId || raw?.searchId || null, 
+    isCompleted: !!(raw?.response?.isCompleted || raw?.isCompleted)
+  };
+
+  if (!raw || !raw.response) return defaultResult;
 
   const data = raw.response;
   const matchedFlights = data.matchedFlights || data.flights || [];
-  if (matchedFlights.length === 0) return { flights: [] };
-
   const isRoundTrip = !!params.returnDate;
 
   const flights = matchedFlights.map((flight) => {

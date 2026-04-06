@@ -2,6 +2,7 @@ const gozayaanService = require("../services/gozayaan.service");
 const sharetripService = require("../services/sharetrip.service");
 const gozayaanModel = require("../models/gozayaan.model");
 const sharetripModel = require("../models/sharetrip.model");
+const db = require("../utils/db");
 
 const providers = {
   gozayaan: {
@@ -36,8 +37,35 @@ async function scrapeProvider(name, params) {
   const tripType = params.returnDate ? "Round Trip" : "One Way";
   console.log(`[${name}] Scraping ${tripType} flights (ID: ${params.search_id || 'NEW'})...`);
 
+  let data = null;
+  let currentSearchId = params.search_id;
+  let attempts = 0;
+  const MAX_ATTEMPTS = 15; // Max 30-45 seconds of polling
+
+  // Initial scrape (Phase 1)
   const raw = await provider.scrape(params);
-  const data = provider.format(raw, params);
+  data = provider.format(raw, params);
+  
+  // If not completed and we have a search_id, poll until done (for GoZayaan/ShareTrip)
+  if (!data.isCompleted && data.search_id) {
+    currentSearchId = data.search_id;
+    console.log(`[${name}] Polling until completed (ID: ${currentSearchId})...`);
+    
+    while (!data.isCompleted && attempts < MAX_ATTEMPTS) {
+      attempts++;
+      await new Promise(r => setTimeout(r, 3000)); // Poll every 3s
+      
+      const pollRaw = await provider.scrape({ ...params, search_id: currentSearchId });
+      const pollData = provider.format(pollRaw, params);
+      
+      // Update data with new flights and status
+      if (pollData.flights && pollData.flights.length > 0) {
+          data.flights = pollData.flights;
+      }
+      data.isCompleted = pollData.isCompleted;
+      console.log(`[${name}] Poll attempt ${attempts}: Found ${data.flights.length} flights (Completed: ${data.isCompleted})`);
+    }
+  }
   
   return { 
     provider: name, 
@@ -45,6 +73,38 @@ async function scrapeProvider(name, params) {
     search_id: data.search_id,
     isCompleted: data.isCompleted
   };
+}
+
+async function saveToDb(params, provider, flights, searchId) {
+  try {
+    const tripType = params.returnDate ? "round-way" : "one-way";
+    
+    // Check if record exists
+    const [rows] = await db.execute(
+      `SELECT id FROM flights WHERE from_location = ? AND to_location = ? AND departure_date = ? AND provider = ?`,
+      [params.from, params.to, params.date, provider]
+    );
+
+    const resultsJson = JSON.stringify(flights);
+
+    if (rows.length > 0) {
+      // Update existing record
+      await db.execute(
+        `UPDATE flights SET results = ?, search_id = ?, search_at = NOW(), updated_at = NOW() WHERE id = ?`,
+        [resultsJson, searchId || null, rows[0].id]
+      );
+    } else {
+      // Create new record
+      await db.execute(
+        `INSERT INTO flights (from_location, to_location, departure_date, return_date, adults, children, infants, cabin_class, trip_type, provider, results, search_id, search_at, created_at, updated_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
+        [params.from, params.to, params.date, params.returnDate, params.adult, params.child, params.infant, params.cabin_class, tripType, provider, resultsJson, searchId || null]
+      );
+    }
+    console.log(`[MySQL] Saved ${flights.length} flights for ${provider} (ID: ${searchId})`);
+  } catch (err) {
+    console.error("[MySQL] Error saving flights:", err.message);
+  }
 }
 
 async function getFlights(req, res) {
@@ -62,6 +122,12 @@ async function getFlights(req, res) {
       }
 
       const result = await scrapeProvider(requestedProvider, params);
+      
+      // Save to MySQL (Wait for it to ensure Laravel finds it in DB right after)
+      if (result && result.flights.length > 0) {
+        await saveToDb(params, requestedProvider, result.flights, result.search_id).catch(err => console.error(err));
+      }
+      
       return res.json({ success: true, tripType, ...result });
     }
 
@@ -78,6 +144,11 @@ async function getFlights(req, res) {
         const { provider, flights } = result.value;
         providerList.push(provider);
         flights.forEach((f) => merged.push({ ...f, provider }));
+        
+        // Save each provider results to DB independently
+        if (flights.length > 0) {
+           saveToDb(params, provider, flights, result.value.search_id).catch(err => console.error(err));
+        }
       }
     });
 

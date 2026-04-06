@@ -958,42 +958,36 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ── Provider polling ──
-    async function startSearch() {
-        if (providers.length === 0) return;
+    // ── DB-backed search ──
+    async function startDbSearch() {
+        if (providers.length === 0) {
+            loaderIcon.innerHTML = 'Done';
+            searchProgressBar.style.width = '100%';
+            return;
+        }
+        
         providers.forEach(p => {
-            providerState[p] = { search_id: null, isCompleted: false };
-            fetchProvider(p);
+            fetchProviderFromDb(p);
         });
     }
 
-    async function fetchProvider(provider) {
+    async function fetchProviderFromDb(provider) {
         try {
-            let url = `/api/search-flights/${provider}`;
-            const state = providerState[provider];
-            if (state.search_id) url += `?search_id=${encodeURIComponent(state.search_id)}`;
-
+            const url = `/api/db-flights/${provider}`;
             const res = await fetch(url);
             const data = await res.json();
 
             if (data.success) {
-                providerState[provider].search_id = data.search_id;
-                providerState[provider].isCompleted = data.isCompleted;
                 processNewFlights(data.flights);
-
-                if (data.isCompleted) {
-                    completedProviders.add(provider);
-                    updateProgress();
-                } else {
-                    loaderText.textContent = 'Fetching more…';
-                    setTimeout(() => fetchProvider(provider), 3000);
-                }
+                completedProviders.add(provider);
+                updateProgress();
             } else {
+                console.error(`Failed to fetch ${provider} from DB:`, data.error);
                 completedProviders.add(provider);
                 updateProgress();
             }
         } catch (e) {
-            console.error(`Error fetching ${provider}:`, e);
+            console.error(`Error fetching ${provider} from DB:`, e);
             completedProviders.add(provider);
             updateProgress();
         }
@@ -1036,13 +1030,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderOTAFilters() {
-        const uniqueOTAs = [...new Set(allFlights.map(f => f.ota_name))];
+        const uniqueOTAs = [...new Set(allFlights.map(f => f.ota_name).filter(Boolean))];
         const colors = {};
-        allFlights.forEach(f => colors[f.ota_name] = f.ota_color);
+        allFlights.forEach(f => {
+            if (f.ota_name) colors[f.ota_name] = f.ota_color;
+        });
 
         otaFiltersContainer.innerHTML = '';
         uniqueOTAs.forEach(ota => {
-            const slug = ota.toLowerCase().replace(/\s+/g, '-');
+            if (!ota) return;
+            const slug = String(ota).toLowerCase().replace(/\s+/g, '-');
             const count = allFlights.filter(f => f.ota_name === ota).length;
             const wrap = document.createElement('div');
             wrap.className = 'ota-item';
@@ -1196,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', function () {
     priceRange.addEventListener('input', applyFilters);
 
     // ── Boot ──
-    startSearch();
+    startDbSearch();
 });
 </script>
 

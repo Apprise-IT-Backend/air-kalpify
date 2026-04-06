@@ -7,6 +7,8 @@ use Carbon\Carbon;
 
 
 use Illuminate\Support\Facades\Http;
+use App\Models\Flight;
+
 
 class FlightController extends Controller
 {
@@ -53,6 +55,7 @@ class FlightController extends Controller
 
     public function fetchProvider(Request $request, $provider)
     {
+        // Existing polling method - kept as requested
         $searchData = $request->session()->get('flight_search');
 
         if (!$searchData) {
@@ -79,7 +82,7 @@ class FlightController extends Controller
             }
 
             $apiData = $response->json();
-            $flights = $this->transformApiResponse($apiData, $provider);
+            $flights = $this->transformApiResponse($apiData, $provider, $apiData['search_id'] ?? null);
 
             return response()->json([
                 'success'     => true,
@@ -97,7 +100,122 @@ class FlightController extends Controller
         }
     }
 
-    private function transformApiResponse($apiData, $provider)
+    /**
+     * New method to fetch flights from DB with fallback to scraper
+     */
+    public function fetchProviderFromDb(Request $request, $provider)
+    {
+        $searchData = $request->session()->get('flight_search');
+
+        if (!$searchData) {
+            return response()->json(['success' => false, 'error' => 'No search session found.'], 400);
+        }
+
+        // 1. Check if we have data in MySQL (fresh within 30 mins)
+        try {
+            $cachedResult = Flight::where('from_location', $searchData['from_location'])
+                ->where('to_location', $searchData['to_location'])
+                ->where('departure_date', $searchData['departure_date'])
+                ->where('provider', $provider)
+                ->where('search_at', '>=', now()->subMinutes(30))
+                ->first();
+
+            if ($cachedResult) {
+                // Pass the search_id from the database to the transformation
+                $flights = $this->transformApiResponse(['flights' => $cachedResult->results], $provider, $cachedResult->search_id ?? null);
+                
+                return response()->json([
+                    'success'     => true,
+                    'provider'    => $provider,
+                    'flights'     => $flights,
+                    'is_from_db'  => true,
+                    'isCompleted' => true
+                ]);
+            }
+        } catch (\Exception $e) {
+            // DB table might not exist yet or connection failed - log and continue to scraper fallback
+            \Log::warning("MySQL check failed: " . $e->getMessage());
+        }
+
+        // 2. Not found or stale, ask Node.js to fetch (Node will save to DB)
+        try {
+            $response = Http::timeout(120)->get('http://localhost:3000/api/flights', [
+                'from'       => $searchData['from_location'],
+                'to'         => $searchData['to_location'],
+                'date'       => $searchData['departure_date'],
+                'adult'      => $searchData['adults']   ?? $searchData['passengers'],
+                'child'      => $searchData['children'] ?? 0,
+                'infant'     => $searchData['infants']  ?? 0,
+                'cabin'      => $searchData['cabin_class'] ?? 'Economy',
+                'tripType'   => $searchData['trip_type']   ?? 'one-way',
+                'provider'   => $provider,
+                'returnDate' => $searchData['return_date'] ?? null,
+            ]);
+
+            if ($response->failed()) {
+                // If Node fails, we might still have a stale result to show as fallback
+                try {
+                    $staleResult = Flight::where('from_location', $searchData['from_location'])
+                        ->where('to_location', $searchData['to_location'])
+                        ->where('departure_date', $searchData['departure_date'])
+                        ->where('provider', $provider)
+                        ->orderBy('search_at', 'desc')
+                        ->first();
+                    
+                    if ($staleResult) {
+                        return response()->json([
+                            'success'    => true,
+                            'provider'   => $provider,
+                            'flights'    => $staleResult->results,
+                            'is_stale'   => true,
+                            'isCompleted'=> true
+                        ]);
+                    }
+                } catch (\Exception $dbEx) { }
+
+                return response()->json(['success' => false, 'error' => 'Failed to fetch from ' . $provider], 500);
+            }
+
+            // 3. Try to get the fresh data from MySQL (as Node just saved it)
+            try {
+                $dbResult = Flight::where('from_location', $searchData['from_location'])
+                    ->where('to_location', $searchData['to_location'])
+                    ->where('departure_date', $searchData['departure_date'])
+                    ->where('provider', $provider)
+                    ->orderBy('search_at', 'desc')
+                    ->first();
+
+                if ($dbResult) {
+                    $flights = $this->transformApiResponse(['flights' => $dbResult->results], $provider, $dbResult->search_id ?? null);
+                    return response()->json([
+                        'success'     => true,
+                        'provider'    => $provider,
+                        'flights'     => $flights,
+                        'isCompleted' => true
+                    ]);
+                }
+            } catch (\Exception $dbEx) { }
+
+            // Final Fallback: use the Node response directly
+            $apiData = $response->json();
+            $flights = $this->transformApiResponse($apiData, $provider);
+            
+            return response()->json([
+                'success'     => true,
+                'provider'    => $provider,
+                'flights'     => $flights,
+                'isCompleted' => true
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'error'   => "Proxy error: " . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function transformApiResponse($apiData, $provider, $searchId = null)
     {
         $flights = $apiData['flights'] ?? [];
         $flatFlights = [];
@@ -105,6 +223,9 @@ class FlightController extends Controller
         $providerKey = strtolower($provider);
         $otaName = $this->getProviderName($providerKey);
         $otaColor = $this->getProviderColor($providerKey);
+        
+        // Use provided searchId if available, otherwise fallback to apiData
+        $finalSearchId = $searchId ?? ($apiData['search_id'] ?? null);
 
         foreach ($flights as $flight) {
             
@@ -175,7 +296,7 @@ class FlightController extends Controller
                 'ota_color'        => $otaColor,
                 'is_round_trip'    => !is_null($returnLeg),
                 'return_leg'       => $returnLeg,
-                'search_id'        => $apiData['search_id'] ?? null,
+                'search_id'        => $finalSearchId,
                 'fare_id'          => $flight['fare_id'] ?? null,
                 'sequence_code'    => $flight['sequenceCode'] ?? null,
                 'provider'         => $providerKey,
