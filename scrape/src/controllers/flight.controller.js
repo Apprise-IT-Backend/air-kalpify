@@ -5,10 +5,10 @@ const sharetripModel = require("../models/sharetrip.model");
 const db = require("../utils/db");
 
 const providers = {
-  gozayaan: {
-    scrape: gozayaanService.scrapeFlights,
-    format: gozayaanModel.formatFlightData,
-  },
+  // gozayaan: {
+  //   scrape: gozayaanService.scrapeFlights,
+  //   format: gozayaanModel.formatFlightData,
+  // },
   sharetrip: {
     scrape: sharetripService.scrapeFlights,
     format: sharetripModel.formatFlightData,
@@ -48,6 +48,7 @@ async function scrapeProvider(name, params) {
   data = provider.format(raw, params);
   
   // If not completed and we have a search_id, poll until done (for GoZayaan/ShareTrip)
+  console.log("Data:", data);
   if (!data.isCompleted && data.search_id) {
     currentSearchId = data.search_id;
     console.log(`[${name}] Polling until completed (ID: ${currentSearchId})...`);
