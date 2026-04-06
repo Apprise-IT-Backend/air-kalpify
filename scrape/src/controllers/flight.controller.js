@@ -31,6 +31,7 @@ function parseParams(query) {
 }
 
 async function scrapeProvider(name, params) {
+  console.log("Scraping provider:", name);
   const provider = providers[name];
   if (!provider) return null;
 
