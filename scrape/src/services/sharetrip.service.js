@@ -1,6 +1,20 @@
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
+const HEADERS = {
+  "User-Agent": USER_AGENT,
+  "Origin": "https://sharetrip.net",
+  "Referer": "https://sharetrip.net/",
+  "Accept": "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
+  "sec-ch-ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": '"Windows"',
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-site",
+};
+
 function buildInitApiUrl(params) {
   const { from, to, date, returnDate, adult, child, kids, infant, cabin_class } = params;
   const tripType = returnDate ? "RETURN" : "ONEWAY";
@@ -38,12 +52,7 @@ async function scrapeFlights(params) {
       // Fetch Page 1
       const res = await fetch(`https://api.sharetrip.net/api/v2/flight/search/available-flights?searchId=${params.search_id}`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "User-Agent": USER_AGENT,
-          "Origin": "https://sharetrip.net",
-          "Referer": "https://sharetrip.net/"
-        },
+        headers: { "Content-Type": "application/json", ...HEADERS },
         body: JSON.stringify({ page: 1, limit: LIMIT }),
       });
       const json = await res.json();
@@ -61,12 +70,7 @@ async function scrapeFlights(params) {
             try {
               const pRes = await fetch(`https://api.sharetrip.net/api/v2/flight/search/available-flights?searchId=${params.search_id}`, {
                 method: "POST",
-                headers: { 
-                  "Content-Type": "application/json",
-                  "User-Agent": USER_AGENT,
-                  "Origin": "https://sharetrip.net",
-                  "Referer": "https://sharetrip.net/"
-                },
+                headers: { "Content-Type": "application/json", ...HEADERS },
                 body: JSON.stringify({ page: pg, limit: LIMIT }),
               });
               const pJson = await pRes.json();
@@ -103,12 +107,7 @@ async function scrapeFlights(params) {
   
   try {
     const initRes = await fetch(apiUrl, {
-      headers: {
-        "User-Agent": USER_AGENT,
-        "Origin": "https://sharetrip.net",
-        "Referer": "https://sharetrip.net/",
-        "Accept": "application/json"
-      }
+      headers: HEADERS
     });
     
     if (!initRes.ok) {
