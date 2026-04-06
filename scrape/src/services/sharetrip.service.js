@@ -1,20 +1,28 @@
-const puppeteer = require("puppeteer");
-
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
-function buildPageUrl(params) {
-  console.log("Params:", params);
+function buildInitApiUrl(params) {
   const { from, to, date, returnDate, adult, child, kids, infant, cabin_class } = params;
-  const tripType = returnDate ? "Return" : "OneWay";
-  const cabin = cabin_class.charAt(0).toUpperCase() + cabin_class.slice(1).toLowerCase();
-  const child2To5Count = kids || 0;
-  const child6To12Count = child || 0;
+  const tripType = returnDate ? "RETURN" : "ONEWAY";
+  const cabin = cabin_class.toUpperCase();
   
-  let url = `https://sharetrip.net/flight-search?tripType=${tripType}&origin=${from}&destination=${to}&depart=${date}`;
-  if (returnDate) url += `&depart=${returnDate}`;
-  url += `&adult=${adult}&child=${child2To5Count + child6To12Count}&infant=${infant}&class=${cabin}&child2To5Count=${child2To5Count}&child6To12Count=${child6To12Count}&occupation=NOT_SELECTED`;
-  return url;
+  const searchParams = new URLSearchParams();
+  searchParams.append("cabinClass", cabin);
+  searchParams.append("currency", "BDT");
+  searchParams.append("departureDates[]", date);
+  if (returnDate) searchParams.append("departureDates[]", returnDate);
+  searchParams.append("destinations[]", to);
+  if (returnDate) searchParams.append("destinations[]", from);
+  searchParams.append("numOfAdult", adult);
+  searchParams.append("numOfChild", child || 0);
+  searchParams.append("numOfInfant", infant || 0);
+  searchParams.append("numOfKid", kids || 0);
+  searchParams.append("occupation", "NOT_SELECTED");
+  searchParams.append("origins[]", from);
+  if (returnDate) searchParams.append("origins[]", to);
+  searchParams.append("tripType", tripType);
+  
+  return `https://api.sharetrip.net/api/v2/flight/search/initialize?${searchParams.toString()}`;
 }
 
 async function scrapeFlights(params) {
@@ -90,93 +98,30 @@ async function scrapeFlights(params) {
     };
   }
 
-  // PHASE 1: Initialization
-  const url = buildPageUrl(params);
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
+  // PHASE 1: Initialization using direct API fetch
+  const apiUrl = buildInitApiUrl(params);
+  
   try {
-    const page = await browser.newPage();
-    await page.setUserAgent(USER_AGENT);
-    let capturedSearchId = null;
-
-    // Intercept requests to fix params
-    await page.setRequestInterception(true);
-    page.on("request", (request) => {
-      const reqUrl = request.url();
-      if (reqUrl.includes("flight/search/initialize")) {
-        let fixedUrl = reqUrl;
-        let modified = false;
-
-        // Ensure brackets for array fields
-        ["departureDates", "origins", "destinations"].forEach(param => {
-          if (fixedUrl.includes(`${param}=`) && !fixedUrl.includes(`${param}[]=`)) {
-            fixedUrl = fixedUrl.replace(new RegExp(`${param}=`, "g"), `${param}[]=`);
-            modified = true;
-          }
-        });
-
-        // ShareTrip API expects ONEWAY (no underscore)
-        if (fixedUrl.includes("tripType=ONE_WAY")) {
-          fixedUrl = fixedUrl.replace("tripType=ONE_WAY", "tripType=ONEWAY");
-          modified = true;
-        }
-
-        if (modified) {
-          const encodedUrl = fixedUrl.replace(/\[\]/g, "%5B%5D");
-          request.continue({ url: encodedUrl });
-          return;
-        }
-      }
-      request.continue();
-    });
-
-    page.on("response", async (response) => {
-      const reqUrl = response.url();
-      if (reqUrl.includes("api.sharetrip.net") && reqUrl.includes("/flight/search/")) {
-        try {
-          const contentType = response.headers()["content-type"] || "";
-          if (!contentType.includes("application/json")) return;
-          const json = await response.json();
-          if (json.response?.searchId) {
-            capturedSearchId = json.response.searchId;
-          }
-        } catch (e) { }
+    const initRes = await fetch(apiUrl, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        "Origin": "https://sharetrip.net",
+        "Referer": "https://sharetrip.net/",
+        "Accept": "application/json"
       }
     });
-
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 40000 });
-
-    const start = Date.now();
-    while (!capturedSearchId && Date.now() - start < 15000) {
-      await new Promise((r) => setTimeout(r, 500));
+    
+    if (!initRes.ok) {
+      throw new Error(`ShareTrip API returned ${initRes.status} ${initRes.statusText}`);
     }
-
-    // Try to get page 1 results quickly if we have ID
-    let initialResults = { response: { searchId: capturedSearchId, matchedFlights: [], isCompleted: false } };
-    if (capturedSearchId) {
-       try {
-         const quickFetch = await page.evaluate(async (sid) => {
-            const res = await fetch(`https://api.sharetrip.net/api/v2/flight/search/available-flights?searchId=${sid}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ page: 1, limit: 10 }),
-            });
-            return res.json();
-         }, capturedSearchId);
-         if (quickFetch?.response) {
-            initialResults = quickFetch;
-            initialResults.response.searchId = capturedSearchId;
-            initialResults.response.isCompleted = false;
-         }
-       } catch { }
-    }
-
-    return initialResults;
-  } finally {
-    await browser.close();
+    
+    const initJson = await initRes.json();
+    const capturedSearchId = initJson?.response?.searchId || null;
+    
+    return { response: { searchId: capturedSearchId, matchedFlights: [], isCompleted: false } };
+  } catch (err) {
+    console.error(`[ShareTrip] Fatal error in Phase 1 setup: ${err.message}`);
+    return { response: { searchId: null, matchedFlights: [], isCompleted: false } };
   }
 }
 

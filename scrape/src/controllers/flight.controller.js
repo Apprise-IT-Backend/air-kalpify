@@ -31,12 +31,12 @@ function parseParams(query) {
 }
 
 async function scrapeProvider(name, params) {
-  console.log("Scraping provider:", name);
+  //console.log("Scraping provider:", name);
   const provider = providers[name];
   if (!provider) return null;
 
   const tripType = params.returnDate ? "Round Trip" : "One Way";
-  console.log(`[${name}] Scraping ${tripType} flights (ID: ${params.search_id || 'NEW'})...`);
+  //console.log(`[${name}] Scraping ${tripType} flights (ID: ${params.search_id || 'NEW'})...`);
 
   let data = null;
   let currentSearchId = params.search_id;
@@ -45,6 +45,7 @@ async function scrapeProvider(name, params) {
 
   // Initial scrape (Phase 1)
   const raw = await provider.scrape(params);
+    console.log("Data:", raw);
   data = provider.format(raw, params);
   
   // If not completed and we have a search_id, poll until done (for GoZayaan/ShareTrip)
