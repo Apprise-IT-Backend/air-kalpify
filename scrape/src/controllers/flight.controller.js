@@ -5,10 +5,10 @@ const sharetripModel = require("../models/sharetrip.model");
 const db = require("../utils/db");
 
 const providers = {
-  // gozayaan: {
-  //   scrape: gozayaanService.scrapeFlights,
-  //   format: gozayaanModel.formatFlightData,
-  // },
+  gozayaan: {
+    scrape: gozayaanService.scrapeFlights,
+    format: gozayaanModel.formatFlightData,
+  },
   sharetrip: {
     scrape: sharetripService.scrapeFlights,
     format: sharetripModel.formatFlightData,
