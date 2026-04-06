@@ -81,10 +81,10 @@ async function saveToDb(params, provider, flights, searchId) {
     // For DB storage, we combine children and kids if schema only has 'children'
     const totalChildren = (params.child || 0) + (params.kids || 0);
     
-    // Check if record exists
+    // Check if record exists for this EXACT search criteria
     const [rows] = await db.execute(
-      `SELECT id FROM flights WHERE from_location = ? AND to_location = ? AND departure_date = ? AND provider = ?`,
-      [params.from, params.to, params.date, provider]
+      `SELECT id FROM flights WHERE from_location = ? AND to_location = ? AND departure_date = ? AND provider = ? AND adults = ? AND children = ? AND infants = ? AND cabin_class = ?`,
+      [params.from, params.to, params.date, provider, params.adult, totalChildren, params.infant, params.cabin_class]
     );
 
     const resultsJson = JSON.stringify(flights);
@@ -111,6 +111,7 @@ async function saveToDb(params, provider, flights, searchId) {
 
 async function getFlights(req, res) {
   try {
+    console.log("Query:", req.query);
     const params = parseParams(req.query);
     const tripType = params.returnDate ? "Round Trip" : "One Way";
     const requestedProvider = req.query.provider?.toLowerCase();

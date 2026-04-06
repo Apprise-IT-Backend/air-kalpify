@@ -644,6 +644,7 @@ body { background: #f1f5f9 !important; }
                         <i class="bi bi-people"></i>
                         {{ $searchData['adults'] ?? $searchData['passengers'] }}A
                         @if(($searchData['children'] ?? 0) > 0), {{ $searchData['children'] }}C @endif
+                        @if(($searchData['kids'] ?? 0) > 0), {{ $searchData['kids'] }}K @endif
                         @if(($searchData['infants'] ?? 0) > 0), {{ $searchData['infants'] }}I @endif
                     </span>
                     <span class="route-meta-chip">
@@ -684,16 +685,31 @@ body { background: #f1f5f9 !important; }
                         <label class="form-label">Return</label>
                         <input type="date" class="form-control" name="return_date" value="{{ $searchData['return_date'] ?? '' }}">
                     </div>
-                    <div class="col-md-1">
-                        <label class="form-label">Adults</label>
-                        <input type="number" class="form-control" name="adults" value="{{ $searchData['adults'] }}" min="1">
+                    <div class="col-md-2 col-4">
+                        <label class="form-label">Adults / Children</label>
+                        <div class="d-flex gap-2">
+                            <input type="number" class="form-control px-2" name="adults" value="{{ $searchData['adults'] }}" min="1" title="Adults">
+                            <input type="number" class="form-control px-2" name="children" value="{{ $searchData['children'] }}" min="0" title="Children (5-11)">
+                        </div>
                     </div>
-                    <input type="hidden" name="children" value="{{ $searchData['children'] }}">
-                    <input type="hidden" name="infants" value="{{ $searchData['infants'] }}">
-                    <input type="hidden" name="cabin_class" value="{{ $searchData['cabin_class'] }}">
+                    <div class="col-md-2 col-4">
+                        <label class="form-label">Kids / Infants</label>
+                        <div class="d-flex gap-2">
+                            <input type="number" class="form-control px-2" name="kids" value="{{ $searchData['kids'] ?? 0 }}" min="0" title="Kids (2-4)">
+                            <input type="number" class="form-control px-2" name="infants" value="{{ $searchData['infants'] }}" min="0" title="Infants">
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <label class="form-label">Cabin</label>
+                        <select class="form-select form-control px-2" name="cabin_class" style="cursor: pointer;">
+                            <option value="Economy" {{ ($searchData['cabin_class'] ?? 'Economy') == 'Economy' ? 'selected' : '' }}>Economy</option>
+                            <option value="Business" {{ ($searchData['cabin_class'] ?? '') == 'Business' ? 'selected' : '' }}>Business</option>
+                            <option value="First" {{ ($searchData['cabin_class'] ?? '') == 'First' ? 'selected' : '' }}>First</option>
+                        </select>
+                    </div>
                     <input type="hidden" name="trip_type" value="{{ $searchData['trip_type'] }}">
-                    <div class="col-md-3 col-lg-auto">
-                        <button type="submit" class="btn btn-primary fw-bold rounded-3 px-4 w-100" id="modifySubmitBtn">
+                    <div class="col-md-12 mt-3 text-end d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary fw-bold rounded-3 px-4 py-2" id="modifySubmitBtn">
                             <i class="bi bi-search me-2"></i>Search Again
                         </button>
                     </div>

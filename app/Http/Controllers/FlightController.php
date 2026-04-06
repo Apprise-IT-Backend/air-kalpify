@@ -120,6 +120,10 @@ class FlightController extends Controller
                 ->where('to_location', $searchData['to_location'])
                 ->where('departure_date', $searchData['departure_date'])
                 ->where('provider', $provider)
+                ->where('adults', $searchData['adults'] ?? $searchData['passengers'] ?? 1)
+                ->where('children', ($searchData['children'] ?? 0) + ($searchData['kids'] ?? 0))
+                ->where('infants', $searchData['infants'] ?? 0)
+                ->where('cabin_class', $searchData['cabin_class'] ?? 'Economy')
                 ->where('search_at', '>=', now()->subMinutes(30))
                 ->first();
 
@@ -163,6 +167,10 @@ class FlightController extends Controller
                         ->where('to_location', $searchData['to_location'])
                         ->where('departure_date', $searchData['departure_date'])
                         ->where('provider', $provider)
+                        ->where('adults', $searchData['adults'] ?? $searchData['passengers'] ?? 1)
+                        ->where('children', ($searchData['children'] ?? 0) + ($searchData['kids'] ?? 0))
+                        ->where('infants', $searchData['infants'] ?? 0)
+                        ->where('cabin_class', $searchData['cabin_class'] ?? 'Economy')
                         ->orderBy('search_at', 'desc')
                         ->first();
                     
@@ -186,6 +194,10 @@ class FlightController extends Controller
                     ->where('to_location', $searchData['to_location'])
                     ->where('departure_date', $searchData['departure_date'])
                     ->where('provider', $provider)
+                    ->where('adults', $searchData['adults'] ?? $searchData['passengers'] ?? 1)
+                    ->where('children', ($searchData['children'] ?? 0) + ($searchData['kids'] ?? 0))
+                    ->where('infants', $searchData['infants'] ?? 0)
+                    ->where('cabin_class', $searchData['cabin_class'] ?? 'Economy')
                     ->orderBy('search_at', 'desc')
                     ->first();
 
