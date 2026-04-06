@@ -23,7 +23,7 @@ function parseParams(query) {
     returnDate: query.returnDate || null,
     adult: parseInt(query.adults || query.adult || 1),
     child: parseInt(query.children || query.child || 0),
-    kids: parseInt(query.kids || 0),
+
     infant: parseInt(query.infants || query.infant || 0),
     cabin_class: query.cabin_class || "Economy",
     search_id: query.search_id || null,
@@ -81,8 +81,7 @@ async function scrapeProvider(name, params) {
 async function saveToDb(params, provider, flights, searchId) {
   try {
     const tripType = params.returnDate ? "round-way" : "one-way";
-    // For DB storage, we combine children and kids if schema only has 'children'
-    const totalChildren = (params.child || 0) + (params.kids || 0);
+    const totalChildren = (params.child || 0);
     
     // Check if record exists for this EXACT search criteria
     const [rows] = await db.execute(

@@ -21,7 +21,7 @@ const HEADERS = {
 };
 
 function buildInitApiUrl(params) {
-  const { from, to, date, returnDate, adult, child, kids, infant, cabin_class } = params;
+  const { from, to, date, returnDate, adult, child, infant, cabin_class } = params;
   const tripType = returnDate ? "RETURN" : "ONEWAY";
   const cabin = cabin_class.toUpperCase();
   
@@ -35,7 +35,7 @@ function buildInitApiUrl(params) {
   searchParams.append("numOfAdult", adult);
   searchParams.append("numOfChild", child || 0);
   searchParams.append("numOfInfant", infant || 0);
-  searchParams.append("numOfKid", kids || 0);
+
   searchParams.append("occupation", "NOT_SELECTED");
   searchParams.append("origins[]", from);
   if (returnDate) searchParams.append("origins[]", to);
