@@ -4,6 +4,7 @@ const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 function buildPageUrl(params) {
+  console.log("Params:", params);
   const { from, to, date, returnDate, adult, child, kids, infant, cabin_class } = params;
   const tripType = returnDate ? "Return" : "OneWay";
   const cabin = cabin_class.charAt(0).toUpperCase() + cabin_class.slice(1).toLowerCase();
