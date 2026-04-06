@@ -3,13 +3,16 @@ const puppeteer = require("puppeteer");
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
-function buildPageUrl({ from, to, date, returnDate, adult, child, infant, cabin_class }) {
+function buildPageUrl(params) {
+  const { from, to, date, returnDate, adult, child, kids, infant, cabin_class } = params;
   const tripType = returnDate ? "Return" : "OneWay";
   const cabin = cabin_class.charAt(0).toUpperCase() + cabin_class.slice(1).toLowerCase();
+  const child2To5Count = kids || 0;
+  const child6To12Count = child || 0;
   
   let url = `https://sharetrip.net/flight-search?tripType=${tripType}&origin=${from}&destination=${to}&depart=${date}`;
   if (returnDate) url += `&depart=${returnDate}`;
-  url += `&adult=${adult}&child=${child}&infant=${infant}&class=${cabin}&child2To5Count=0&child6To12Count=0&occupation=NOT_SELECTED`;
+  url += `&adult=${adult}&child=${child2To5Count + child6To12Count}&infant=${infant}&class=${cabin}&child2To5Count=${child2To5Count}&child6To12Count=${child6To12Count}&occupation=NOT_SELECTED`;
   return url;
 }
 

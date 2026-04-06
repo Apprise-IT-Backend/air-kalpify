@@ -5,12 +5,16 @@ const USER_AGENT =
 const SEARCH_TIMEOUT = 60000;
 const POLL_INTERVAL = 2000;
 
-function buildUrl({ from, to, date, returnDate, adult, child, child_age, infant, cabin_class }) {
+function buildUrl(params) {
+  const { from, to, date, returnDate, adult, child, kids, infant, cabin_class } = params;
+  const totalChildren = (child || 0) + (kids || 0);
+  const child_age = params.child_age || ""; // Optional, maybe we add individual ages later
+  
   let trips = `${from},${to},${date}`;
   if (returnDate) {
     trips += `,${to},${from},${returnDate}`;
   }
-  return `https://gozayaan.com/flight/list?adult=${adult}&child=${child}&child_age=${child_age}&infant=${infant}&cabin_class=${cabin_class}&trips=${trips}`;
+  return `https://gozayaan.com/flight/list?adult=${adult}&child=${totalChildren}&child_age=${child_age}&infant=${infant}&cabin_class=${cabin_class}&trips=${trips}`;
 }
 
 async function scrapeFlights(params) {

@@ -21,10 +21,10 @@ function parseParams(query) {
     to: query.to || "CXB",
     date: query.date || "2026-03-27",
     returnDate: query.returnDate || null,
-    adult: query.adult || 1,
-    child: query.child || 0,
-    child_age: query.child_age || "",
-    infant: query.infant || 0,
+    adult: parseInt(query.adults || query.adult || 1),
+    child: parseInt(query.children || query.child || 0),
+    kids: parseInt(query.kids || 0),
+    infant: parseInt(query.infants || query.infant || 0),
     cabin_class: query.cabin_class || "Economy",
     search_id: query.search_id || null,
   };
@@ -78,6 +78,8 @@ async function scrapeProvider(name, params) {
 async function saveToDb(params, provider, flights, searchId) {
   try {
     const tripType = params.returnDate ? "round-way" : "one-way";
+    // For DB storage, we combine children and kids if schema only has 'children'
+    const totalChildren = (params.child || 0) + (params.kids || 0);
     
     // Check if record exists
     const [rows] = await db.execute(
@@ -98,7 +100,7 @@ async function saveToDb(params, provider, flights, searchId) {
       await db.execute(
         `INSERT INTO flights (from_location, to_location, departure_date, return_date, adults, children, infants, cabin_class, trip_type, provider, results, search_id, search_at, created_at, updated_at) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
-        [params.from, params.to, params.date, params.returnDate, params.adult, params.child, params.infant, params.cabin_class, tripType, provider, resultsJson, searchId || null]
+        [params.from, params.to, params.date, params.returnDate, params.adult, totalChildren, params.infant, params.cabin_class, tripType, provider, resultsJson, searchId || null]
       );
     }
     console.log(`[MySQL] Saved ${flights.length} flights for ${provider} (ID: ${searchId})`);

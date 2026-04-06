@@ -21,9 +21,9 @@
         --shadow-strong: 0 20px 60px rgba(0,0,0,0.2);
     }
 
-    /* ===== HERO ===== */
     .hero-section {
         position: relative;
+        z-index: 10;
         /* Pull hero up behind the sticky navbar (navbar ≈ 72px tall) */
         margin-top: -72px;
         min-height: 100vh;
@@ -35,7 +35,7 @@
         align-items: center;
         justify-content: flex-end;
         padding-bottom: 180px;
-        overflow: hidden;
+        overflow: visible; /* Ensure it doesn't clip the dropdown */
     }
 
     .hero-overlay {
@@ -176,7 +176,7 @@
     /* ===== SEARCH PANEL ===== */
     .search-panel-wrapper {
         position: relative;
-        z-index: 10;
+        z-index: 100;
         max-width: 1200px;
         width: 100%;
         padding: 0 20px;
@@ -727,6 +727,8 @@
         background: white;
         border-top: 1px solid #f1f5f9;
         border-bottom: 1px solid #f1f5f9;
+        position: relative;
+        z-index: 1;
     }
 
     .airlines-strip p {
@@ -864,7 +866,7 @@
                 </div>
 
                 <!-- Inputs Row -->
-                <div class="d-flex gap-0 align-items-stretch" style="border-radius: 14px; overflow: hidden; border: 1.5px solid #e2e8f0;">
+                <div class="d-flex gap-0 align-items-stretch" style="border-radius: 14px; overflow: visible; border: 1.5px solid #e2e8f0;">
                     <div class="search-inputs" style="flex: 1; border: none; border-radius: 0; overflow: visible;">
                         <!-- Origin -->
                         <div class="s-field" style="flex: 1.2; min-width: 140px;">
@@ -906,9 +908,9 @@
                         <div class="s-separator"></div>
 
                         <!-- Travelers & Class -->
-                        <div class="s-field" id="travelerGroup" style="flex: 1.2; min-width: 150px; position: relative;">
+                        <div class="s-field" id="travelerGroup" style="flex: 1.2; min-width: 150px; position: relative; cursor: pointer;">
                             <label><i class="bi bi-people me-1"></i>Travelers & Class</label>
-                            <div id="travelerTrigger" style="cursor: pointer;">
+                            <div id="travelerTrigger">
                                 <div class="s-display" id="travelerDisplay" style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary);">1 Traveler</div>
                                 <div class="s-sub" id="classDisplay">Economy</div>
                             </div>
@@ -916,7 +918,10 @@
                             <!-- Traveler Dropdown -->
                             <div class="traveler-dropdown" id="travelerDropdown">
                                 <div class="t-row">
-                                    <div class="t-info"><h6>Adults</h6><p>12 years and above</p></div>
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-person-fill fs-4 text-secondary"></i>
+                                        <div><h6>Adults</h6><p>12 years & above</p></div>
+                                    </div>
                                     <div class="t-controls">
                                         <button type="button" class="t-btn" data-type="adults" data-delta="-1"><i class="bi bi-dash"></i></button>
                                         <span id="adultsCount">1</span>
@@ -924,7 +929,10 @@
                                     </div>
                                 </div>
                                 <div class="t-row">
-                                    <div class="t-info"><h6>Children</h6><p>2–11 years</p></div>
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-person fs-4 text-secondary"></i>
+                                        <div><h6>Children</h6><p>From 5 to under 12</p></div>
+                                    </div>
                                     <div class="t-controls">
                                         <button type="button" class="t-btn" data-type="children" data-delta="-1"><i class="bi bi-dash"></i></button>
                                         <span id="childrenCount">0</span>
@@ -932,7 +940,21 @@
                                     </div>
                                 </div>
                                 <div class="t-row">
-                                    <div class="t-info"><h6>Infants</h6><p>Below 2 years</p></div>
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-person-heart fs-4 text-secondary"></i>
+                                        <div><h6>Kids</h6><p>From 2 to under 5</p></div>
+                                    </div>
+                                    <div class="t-controls">
+                                        <button type="button" class="t-btn" data-type="kids" data-delta="-1"><i class="bi bi-dash"></i></button>
+                                        <span id="kidsCount">0</span>
+                                        <button type="button" class="t-btn" data-type="kids" data-delta="1"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="t-row">
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-emoji-smile fs-4 text-secondary"></i>
+                                        <div><h6>Infants</h6><p>Under 2 years</p></div>
+                                    </div>
                                     <div class="t-controls">
                                         <button type="button" class="t-btn" data-type="infants" data-delta="-1"><i class="bi bi-dash"></i></button>
                                         <span id="infantsCount">0</span>
@@ -953,6 +975,7 @@
 
                                 <input type="hidden" name="adults" id="adultsHidden" value="1">
                                 <input type="hidden" name="children" id="childrenHidden" value="0">
+                                <input type="hidden" name="kids" id="kidsHidden" value="0">
                                 <input type="hidden" name="infants" id="infantsHidden" value="0">
                                 <input type="hidden" name="cabin_class" id="cabinHidden" value="Economy">
                             </div>
@@ -1159,25 +1182,39 @@
     })();
 
     // ===== TRAVELER COUNTS =====
-    let counts = { adults: 1, children: 0, infants: 0 };
+    let counts = { adults: 1, children: 0, kids: 0, infants: 0 };
     let selectedCabin = 'Economy';
 
     function refreshTravelerDisplay() {
-        const total = counts.adults + counts.children + counts.infants;
+        const total = counts.adults + counts.children + counts.kids + counts.infants;
         document.getElementById('travelerDisplay').textContent = `${total} Traveler${total !== 1 ? 's' : ''}`;
         document.getElementById('classDisplay').textContent = selectedCabin;
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
         // --- Traveler dropdown toggle ---
+        const travelerGroup = document.getElementById('travelerGroup');
         const trigger = document.getElementById('travelerTrigger');
         const dropdown = document.getElementById('travelerDropdown');
         const doneBtn = document.getElementById('doneBtn');
 
-        trigger.addEventListener('click', e => { e.stopPropagation(); dropdown.classList.toggle('show'); });
-        doneBtn.addEventListener('click', () => dropdown.classList.remove('show'));
+        // Open/close dropdown when clicking the field (but NOT when clicking inside the dropdown)
+        travelerGroup.addEventListener('click', e => { 
+            e.stopPropagation();
+            // If the click is inside the dropdown itself, don't toggle
+            if (dropdown.contains(e.target)) return;
+            dropdown.classList.toggle('show'); 
+        });
+        // Prevent clicks inside dropdown from bubbling to travelerGroup
+        dropdown.addEventListener('click', e => {
+            e.stopPropagation();
+        });
+        doneBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.remove('show');
+        });
         document.addEventListener('click', e => {
-            if (!dropdown.contains(e.target) && !trigger.contains(e.target)) dropdown.classList.remove('show');
+            if (!dropdown.contains(e.target) && !travelerGroup.contains(e.target)) dropdown.classList.remove('show');
         });
 
         // --- Counter buttons ---

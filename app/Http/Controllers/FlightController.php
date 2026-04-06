@@ -21,6 +21,7 @@ class FlightController extends Controller
             'return_date'    => 'nullable|date|after_or_equal:departure_date',
             'adults'         => 'required|integer|min:1|max:9',
             'children'       => 'nullable|integer|min:0|max:9',
+            'kids'           => 'nullable|integer|min:0|max:9',
             'infants'        => 'nullable|integer|min:0|max:9',
             'cabin_class'    => 'nullable|string|in:Economy,Business,First',
             'trip_type'      => 'nullable|string|in:one-way,round-way,multi-city',
@@ -28,11 +29,12 @@ class FlightController extends Controller
 
         // Normalise optional fields
         $validated['children']    = $validated['children']    ?? 0;
+        $validated['kids']        = $validated['kids']        ?? 0;
         $validated['infants']     = $validated['infants']     ?? 0;
         $validated['cabin_class'] = $validated['cabin_class'] ?? 'Economy';
         $validated['trip_type']   = $validated['trip_type']   ?? 'one-way';
         // Keep a combined passenger count for backward-compat
-        $validated['passengers']  = $validated['adults'] + $validated['children'] + $validated['infants'];
+        $validated['passengers']  = $validated['adults'] + $validated['children'] + $validated['kids'] + $validated['infants'];
 
         $request->session()->put('flight_search', $validated);
 
@@ -67,9 +69,10 @@ class FlightController extends Controller
                 'from'       => $searchData['from_location'],
                 'to'         => $searchData['to_location'],
                 'date'       => $searchData['departure_date'],
-                'adult'      => $searchData['adults']   ?? $searchData['passengers'],
-                'child'      => $searchData['children'] ?? 0,
-                'infant'     => $searchData['infants']  ?? 0,
+                'adults'     => $searchData['adults']   ?? $searchData['passengers'],
+                'children'   => $searchData['children'] ?? 0,
+                'kids'       => $searchData['kids']     ?? 0,
+                'infants'    => $searchData['infants']  ?? 0,
                 'cabin'      => $searchData['cabin_class'] ?? 'Economy',
                 'tripType'   => $searchData['trip_type']   ?? 'one-way',
                 'provider'   => $provider,
@@ -143,9 +146,10 @@ class FlightController extends Controller
                 'from'       => $searchData['from_location'],
                 'to'         => $searchData['to_location'],
                 'date'       => $searchData['departure_date'],
-                'adult'      => $searchData['adults']   ?? $searchData['passengers'],
-                'child'      => $searchData['children'] ?? 0,
-                'infant'     => $searchData['infants']  ?? 0,
+                'adults'     => $searchData['adults']   ?? $searchData['passengers'],
+                'children'   => $searchData['children'] ?? 0,
+                'kids'       => $searchData['kids']     ?? 0,
+                'infants'    => $searchData['infants']  ?? 0,
                 'cabin'      => $searchData['cabin_class'] ?? 'Economy',
                 'tripType'   => $searchData['trip_type']   ?? 'one-way',
                 'provider'   => $provider,
