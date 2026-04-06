@@ -132,8 +132,14 @@ async function getFlights(req, res) {
     }
 
     // No provider specified — scrape all in parallel and merge
+    console.log(`[Controller] Starting parallel scrape for all providers...`);
+    const providerNames = Object.keys(providers);
     const results = await Promise.allSettled(
-      Object.keys(providers).map((name) => scrapeProvider(name, params))
+      providerNames.map((name) => {
+        // Deep clone params to avoid any shared state issues
+        const providerParams = JSON.parse(JSON.stringify(params));
+        return scrapeProvider(name, providerParams);
+      })
     );
 
     const merged = [];
@@ -141,14 +147,16 @@ async function getFlights(req, res) {
 
     results.forEach((result) => {
       if (result.status === "fulfilled" && result.value) {
-        const { provider, flights } = result.value;
+        const { provider, flights, search_id } = result.value;
         providerList.push(provider);
         flights.forEach((f) => merged.push({ ...f, provider }));
         
         // Save each provider results to DB independently
         if (flights.length > 0) {
-           saveToDb(params, provider, flights, result.value.search_id).catch(err => console.error(err));
+           saveToDb(params, provider, flights, search_id).catch(err => console.error(`[MySQL] Save error for ${provider}: ${err.message}`));
         }
+      } else if (result.status === "rejected") {
+        console.error(`[Controller] Provider failed:`, result.reason);
       }
     });
 
