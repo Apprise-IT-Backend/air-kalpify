@@ -68,8 +68,18 @@ function formatDuration(raw, seconds) {
 
 // ── Stops helper ──────────────────────────────────────────────────────────────
 
-function stopsLabel(count) {
-  if (!count || count === 0) return "Non Stop";
+function stopsLabel(raw) {
+  if (raw === 0 || raw === "0" || raw === "Non Stop") return "Non Stop";
+  if (!raw) return "Non Stop";
+
+  // If it's already a string like "1 Stop", return it directly
+  if (typeof raw === "string" && raw.toLowerCase().includes("stop")) {
+    return raw;
+  }
+
+  const count = parseInt(raw, 10);
+  if (isNaN(count)) return raw;
+  if (count === 0) return "Non Stop";
   return `${count} Stop${count > 1 ? "s" : ""}`;
 }
 
