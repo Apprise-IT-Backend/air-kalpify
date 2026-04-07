@@ -4,7 +4,7 @@ const amybdService    = require("../services/amybd.service");
 const gozayaanModel = require("../models/gozayaan.model");
 const sharetripModel = require("../models/sharetrip.model");
 const amybdModel    = require("../models/amybd.model");
-const db = require("../utils/db");
+const mysqlDb = require("../utils/db");
 
 const providers = {
   gozayaan: {
@@ -102,7 +102,7 @@ async function saveToDb(params, provider, flights, searchId) {
     const totalChildren = (params.child || 0) + (params.kids || 0);
     
     // Check if record exists for this EXACT search criteria
-    const [rows] = await db.execute(
+    const [rows] = await mysqlDb.execute(
       `SELECT id FROM flights WHERE from_location = ? AND to_location = ? AND departure_date = ? AND provider = ? AND adults = ? AND children = ? AND infants = ? AND cabin_class = ?`,
       [params.from, params.to, params.date, provider, params.adult, totalChildren, params.infant, params.cabin_class]
     );
@@ -111,13 +111,13 @@ async function saveToDb(params, provider, flights, searchId) {
 
     if (rows.length > 0) {
       // Update existing record
-      await db.execute(
+      await mysqlDb.execute(
         `UPDATE flights SET results = ?, search_id = ?, search_at = NOW(), updated_at = NOW() WHERE id = ?`,
         [resultsJson, searchId || null, rows[0].id]
       );
     } else {
       // Create new record
-      await db.execute(
+      await mysqlDb.execute(
         `INSERT INTO flights (from_location, to_location, departure_date, return_date, adults, children, infants, cabin_class, trip_type, provider, results, search_id, search_at, created_at, updated_at) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
         [params.from, params.to, params.date, params.returnDate, params.adult, totalChildren, params.infant, params.cabin_class, tripType, provider, resultsJson, searchId || null]
