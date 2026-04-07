@@ -13,13 +13,20 @@
     --red: #ef4444;
     --surface: #ffffff;
     --surface-2: #f8fafc;
-    --border: #e8edf3;
+    --border: #e2e8f0; /* Matched to home page */
     --text-1: #0f172a;
     --text-2: #475569;
     --text-3: #94a3b8;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
     --radius: 16px;
+    --card-radius: 20px;
+    --input-radius: 14px;
     --shadow-sm: 0 2px 12px rgba(0,0,0,0.06);
     --shadow-md: 0 6px 30px rgba(0,0,0,0.10);
+    --shadow-soft: 0 4px 24px rgba(0,0,0,0.06);
+    --shadow-med: 0 8px 40px rgba(0,0,0,0.12);
+    --shadow-strong: 0 20px 60px rgba(0,0,0,0.2);
 }
 
 body { background: #f1f5f9 !important; }
@@ -129,26 +136,326 @@ body { background: #f1f5f9 !important; }
 
 /* Collapsible modify search panel */
 .modify-search-panel {
-    background: var(--surface);
+    background: #f8fafc;
     border-top: 1px solid var(--border);
-    padding: 20px 24px;
+    padding: 30px 0;
     display: none;
+    box-shadow: inset 0 10px 20px -10px rgba(0,0,0,0.05);
 }
 .modify-search-panel.open { display: block; }
-.modify-search-panel .form-control {
-    border-radius: 10px;
-    border: 1.5px solid var(--border);
-    padding: 10px 14px;
-    font-size: 0.88rem;
-    font-weight: 500;
+
+/* Trip type pills */
+.trip-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
 }
-.modify-search-panel .form-label {
-    font-size: 0.72rem;
+
+.trip-tab {
+    padding: 8px 22px;
+    border-radius: 30px;
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+}
+
+.trip-tab:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.trip-tab.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: white;
+    box-shadow: 0 4px 15px rgba(59,130,246,0.35);
+}
+
+/* Search inputs row */
+.search-inputs {
+    display: flex;
+    align-items: stretch;
+    background: #f1f5f9;
+    border-radius: var(--input-radius);
+    overflow: visible;
+    gap: 1px;
+}
+
+.s-field {
+    flex: 1;
+    min-width: 0;
+    background: white;
+    padding: 16px 22px;
+    position: relative;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.s-field:first-child {
+    border-top-left-radius: var(--input-radius);
+    border-bottom-left-radius: var(--input-radius);
+}
+
+.s-field:focus-within {
+    background: #eff6ff;
+    z-index: 5;
+}
+
+.s-field label {
+    display: block;
+    font-size: 0.7rem;
     font-weight: 700;
+    color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-3);
-    margin-bottom: 6px;
+    letter-spacing: 0.6px;
+    margin-bottom: 4px;
+}
+
+.s-field input, .s-field .s-display {
+    border: none;
+    background: transparent;
+    width: 100%;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    padding: 0;
+    outline: none;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.s-field input::placeholder {
+    font-weight: 500;
+    color: #cbd5e1;
+}
+
+.s-field .s-sub {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 1px;
+    font-weight: 400;
+}
+
+.s-separator {
+    width: 1px;
+    background: #e2e8f0;
+    align-self: stretch;
+}
+
+/* Swap button */
+.swap-btn {
+    position: absolute;
+    right: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    width: 36px;
+    height: 36px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--blue);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-size: 0.8rem;
+}
+
+.swap-btn:hover {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: white;
+    transform: translateY(-50%) rotate(180deg) scale(1.1);
+}
+
+/* Date field with calendar icon */
+.s-field .cal-icon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+.s-field input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+}
+.s-field input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+    position: absolute;
+    right: 14px;
+    width: 24px;
+    height: 24px;
+}
+
+/* Traveler field */
+.traveler-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 340px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--shadow-strong);
+    padding: 24px;
+    z-index: 1000;
+    display: none;
+    border: 1px solid var(--border);
+    animation: dropIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.traveler-dropdown.show { display: block; }
+
+@keyframes dropIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.t-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.t-row:last-of-type { border-bottom: none; }
+
+.t-info h6 { margin: 0; font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+.t-info p { margin: 0; font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
+
+.t-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+    min-width: 90px;
+    justify-content: center;
+}
+
+.t-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid #e2e8f0;
+    background: white;
+    display: flex; align-items: center; justify-content: center;
+    color: #64748b;
+    transition: all 0.2s;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.t-btn:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: #eff6ff;
+}
+.t-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.cabin-section { border-top: 1px solid #f1f5f9; padding-top: 16px; margin-top: 4px; }
+.cabin-section h6 { font-weight: 700; font-size: 0.85rem; margin-bottom: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.cabin-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.cabin-chip {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1.5px solid #e2e8f0;
+    background: transparent;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.cabin-chip:hover { border-color: var(--blue); color: var(--blue); }
+.cabin-chip.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: white;
+}
+
+.btn-done-new {
+    width: 100%;
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-top: 18px;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+.btn-done-new:hover { opacity: 0.92; transform: translateY(-1px); }
+
+/* Search Button */
+.btn-search-main {
+    height: 100%;
+    min-height: 80px;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    color: white;
+    border: none;
+    border-top-right-radius: var(--input-radius);
+    border-bottom-right-radius: var(--input-radius);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding: 0 36px;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    box-shadow: 4px 0 0 rgba(99,102,241,0.3) inset;
+    cursor: pointer;
+}
+
+.btn-search-main:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    padding-right: 44px;
+    box-shadow: -4px 0 30px rgba(99,102,241,0.4);
+}
+
+.btn-search-main i {
+    font-size: 1.1rem;
+    transition: transform 0.3s;
+}
+
+.btn-search-main:hover i {
+    transform: translateX(4px);
+}
+
+@media (max-width: 768px) {
+    .search-inputs { flex-direction: column; }
+    .s-field:first-child { border-bottom-left-radius: 0; border-top-right-radius: var(--input-radius); }
+    .s-field { border-radius: 0; }
+    .swap-btn { display: none; }
+    .btn-search-main {
+        border-radius: var(--input-radius) !important;
+        width: 100%;
+        justify-content: center;
+        min-height: 56px;
+        margin-top: 4px;
+    }
 }
 
 /* ─── Layout ────────────────────────────────────────────── */
@@ -715,55 +1022,153 @@ body { background: #f1f5f9 !important; }
 
     {{-- Modify Search Inline Panel --}}
     <div class="modify-search-panel" id="modifyPanel">
-        <div class="container-xl px-0">
+        <div class="container-xl">
             <form action="/search" method="POST" id="modifySearchForm">
                 @csrf
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-2">
-                        <label class="form-label">From</label>
-                        <input type="text" class="form-control" name="from_location" value="{{ $searchData['from_location'] }}" required>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">To</label>
-                        <input type="text" class="form-control" name="to_location" value="{{ $searchData['to_location'] }}" required>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Departure</label>
-                        <input type="date" class="form-control" name="departure_date" value="{{ $searchData['departure_date'] }}" required>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Return</label>
-                        <input type="date" class="form-control" name="return_date" value="{{ $searchData['return_date'] ?? '' }}">
-                    </div>
-                    <div class="col-md-2 col-4">
-                        <label class="form-label">Adults / Children</label>
-                        <div class="d-flex gap-2">
-                            <input type="number" class="form-control px-2" name="adults" value="{{ $searchData['adults'] }}" min="1" title="Adults">
-                            <input type="number" class="form-control px-2" name="children" value="{{ $searchData['children'] }}" min="0" title="Children (5-11)">
+                
+                <!-- Trip Type Tabs -->
+                <div class="trip-tabs">
+                    <button type="button" class="trip-tab {{ ($searchData['trip_type'] ?? 'one-way') == 'one-way' ? 'active' : '' }}" data-value="one-way">
+                        <i class="bi bi-arrow-right me-1"></i> One Way
+                    </button>
+                    <button type="button" class="trip-tab {{ ($searchData['trip_type'] ?? '') == 'round-way' ? 'active' : '' }}" data-value="round-way">
+                        <i class="bi bi-arrow-left-right me-1"></i> Round Way
+                    </button>
+                    <button type="button" class="trip-tab {{ ($searchData['trip_type'] ?? '') == 'multi-city' ? 'active' : '' }}" data-value="multi-city">
+                        <i class="bi bi-plus-circle me-1"></i> Multi City
+                    </button>
+                    <input type="hidden" name="trip_type" id="tripTypeInput" value="{{ $searchData['trip_type'] ?? 'one-way' }}">
+                </div>
+
+                <div class="d-flex gap-0 align-items-stretch" style="border-radius: 14px; overflow: visible; border: 1.5px solid #e2e8f0;">
+                    <div class="search-inputs" style="flex: 1; border: none; border-radius: 0; overflow: visible;">
+                        <!-- Origin -->
+                        <div class="s-field" style="flex: 1.2; min-width: 140px;">
+                            <label><i class="bi bi-geo-alt me-1"></i>From</label>
+                            <input type="text" name="from_location" id="fromInput" value="{{ $searchData['from_location'] }}" placeholder="City or airport" required list="airportsList" autocomplete="off">
+                            <div class="s-sub" id="fromCityName">Departure City</div>
+                            <div class="swap-btn" id="swapBtn" title="Swap airports">
+                                <i class="bi bi-arrow-left-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="s-separator"></div>
+
+                        <!-- Destination -->
+                        <div class="s-field" style="flex: 1.2; min-width: 140px;">
+                            <label><i class="bi bi-geo me-1"></i>To</label>
+                            <input type="text" name="to_location" id="toInput" value="{{ $searchData['to_location'] }}" placeholder="City or airport" required list="airportsList" autocomplete="off">
+                            <div class="s-sub" id="toCityName">Arrival City</div>
+                        </div>
+
+                        <div class="s-separator"></div>
+
+                        <!-- Departure -->
+                        <div class="s-field" style="flex: 1; min-width: 130px; position: relative;">
+                            <label><i class="bi bi-calendar3 me-1"></i>Departure</label>
+                            <input type="date" name="departure_date" id="depDateInput" value="{{ $searchData['departure_date'] }}" required>
+                            <i class="cal-icon bi bi-calendar2-week"></i>
+                        </div>
+
+                        <div class="s-separator"></div>
+
+                        <!-- Return -->
+                        <div class="s-field" id="returnBox" style="flex: 1; min-width: 130px; opacity: {{ ($searchData['trip_type'] ?? '') == 'round-way' ? '1' : '0.38' }}; transition: opacity 0.3s; position: relative;">
+                            <label><i class="bi bi-calendar3 me-1"></i>Return</label>
+                            <input type="date" name="return_date" id="returnDateInput" value="{{ $searchData['return_date'] ?? '' }}" placeholder="Add return" {{ ($searchData['trip_type'] ?? '') == 'round-way' ? '' : 'disabled' }}>
+                            <i class="cal-icon bi bi-calendar2-week"></i>
+                        </div>
+
+                        <div class="s-separator"></div>
+
+                        <!-- Travelers & Class -->
+                        <div class="s-field" id="travelerGroup" style="flex: 1.2; min-width: 150px; position: relative; cursor: pointer;">
+                            <label><i class="bi bi-people me-1"></i>Travelers & Class</label>
+                            <div id="travelerTrigger">
+                                @php
+                                    $totalTravelers = ($searchData['adults'] ?? 1) + ($searchData['children'] ?? 0) + ($searchData['kids'] ?? 0) + ($searchData['infants'] ?? 0);
+                                @endphp
+                                <div class="s-display" id="travelerDisplay" style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary);">{{ $totalTravelers }} Traveler{{ $totalTravelers > 1 ? 's' : '' }}</div>
+                                <div class="s-sub" id="classDisplay">{{ $searchData['cabin_class'] ?? 'Economy' }}</div>
+                            </div>
+
+                            <!-- Traveler Dropdown -->
+                            <div class="traveler-dropdown" id="travelerDropdown">
+                                <div class="t-row">
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-person-fill fs-4 text-secondary"></i>
+                                        <div><h6>Adults</h6><p>12 years & above</p></div>
+                                    </div>
+                                    <div class="t-controls">
+                                        <button type="button" class="t-btn" data-type="adults" data-delta="-1"><i class="bi bi-dash"></i></button>
+                                        <span id="adultsCount">{{ $searchData['adults'] ?? 1 }}</span>
+                                        <button type="button" class="t-btn" data-type="adults" data-delta="1"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="t-row">
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-person fs-4 text-secondary"></i>
+                                        <div><h6>Children</h6><p>From 5 to under 12</p></div>
+                                    </div>
+                                    <div class="t-controls">
+                                        <button type="button" class="t-btn" data-type="children" data-delta="-1"><i class="bi bi-dash"></i></button>
+                                        <span id="childrenCount">{{ $searchData['children'] ?? 0 }}</span>
+                                        <button type="button" class="t-btn" data-type="children" data-delta="1"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="t-row">
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-person-heart fs-4 text-secondary"></i>
+                                        <div><h6>Kids</h6><p>From 2 to under 5</p></div>
+                                    </div>
+                                    <div class="t-controls">
+                                        <button type="button" class="t-btn" data-type="kids" data-delta="-1"><i class="bi bi-dash"></i></button>
+                                        <span id="kidsCount">{{ $searchData['kids'] ?? 0 }}</span>
+                                        <button type="button" class="t-btn" data-type="kids" data-delta="1"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="t-row">
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-emoji-smile fs-4 text-secondary"></i>
+                                        <div><h6>Infants</h6><p>Under 2 years</p></div>
+                                    </div>
+                                    <div class="t-controls">
+                                        <button type="button" class="t-btn" data-type="infants" data-delta="-1"><i class="bi bi-dash"></i></button>
+                                        <span id="infantsCount">{{ $searchData['infants'] ?? 0 }}</span>
+                                        <button type="button" class="t-btn" data-type="infants" data-delta="1"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="cabin-section">
+                                    <h6>Cabin Class</h6>
+                                    <div class="cabin-options">
+                                        <div class="cabin-chip {{ ($searchData['cabin_class'] ?? 'Economy') == 'Economy' ? 'active' : '' }}" data-class="Economy">Economy</div>
+                                        <div class="cabin-chip {{ ($searchData['cabin_class'] ?? '') == 'Business' ? 'active' : '' }}" data-class="Business">Business</div>
+                                        <div class="cabin-chip {{ ($searchData['cabin_class'] ?? '') == 'First' ? 'active' : '' }}" data-class="First">First</div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn-done-new" id="doneBtn">Done</button>
+
+                                <input type="hidden" name="adults" id="adultsHidden" value="{{ $searchData['adults'] ?? 1 }}">
+                                <input type="hidden" name="children" id="childrenHidden" value="{{ $searchData['children'] ?? 0 }}">
+                                <input type="hidden" name="kids" id="kidsHidden" value="{{ $searchData['kids'] ?? 0 }}">
+                                <input type="hidden" name="infants" id="infantsHidden" value="{{ $searchData['infants'] ?? 0 }}">
+                                <input type="hidden" name="cabin_class" id="cabinHidden" value="{{ $searchData['cabin_class'] ?? 'Economy' }}">
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-2 col-4">
-                        <label class="form-label">Kids / Infants</label>
-                        <div class="d-flex gap-2">
-                            <input type="number" class="form-control px-2" name="kids" value="{{ $searchData['kids'] ?? 0 }}" min="0" title="Kids (2-4)">
-                            <input type="number" class="form-control px-2" name="infants" value="{{ $searchData['infants'] }}" min="0" title="Infants">
-                        </div>
-                    </div>
-                    <div class="col-md-2 col-4">
-                        <label class="form-label">Cabin</label>
-                        <select class="form-select form-control px-2" name="cabin_class" style="cursor: pointer;">
-                            <option value="Economy" {{ ($searchData['cabin_class'] ?? 'Economy') == 'Economy' ? 'selected' : '' }}>Economy</option>
-                            <option value="Business" {{ ($searchData['cabin_class'] ?? '') == 'Business' ? 'selected' : '' }}>Business</option>
-                            <option value="First" {{ ($searchData['cabin_class'] ?? '') == 'First' ? 'selected' : '' }}>First</option>
-                        </select>
-                    </div>
-                    <input type="hidden" name="trip_type" value="{{ $searchData['trip_type'] }}">
-                    <div class="col-md-12 mt-3 text-end d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary fw-bold rounded-3 px-4 py-2" id="modifySubmitBtn">
-                            <i class="bi bi-search me-2"></i>Search Again
+
+                    <!-- Search Button -->
+                    <div class="search-cta-field">
+                        <button type="submit" class="btn-search-main" id="modifySubmitBtn">
+                            <i class="bi bi-search"></i>
+                            <span>Search</span>
                         </button>
                     </div>
                 </div>
+
+                <datalist id="airportsList"></datalist>
             </form>
         </div>
     </div>
@@ -994,6 +1399,123 @@ document.addEventListener('DOMContentLoaded', function () {
     const loaderIcon = $('loaderIcon');
 
     function $(id) { return document.getElementById(id); }
+
+    // --- Traveler Counts Initialization ---
+    let counts = { 
+        adults: parseInt(@json($searchData['adults'] ?? 1)), 
+        children: parseInt(@json($searchData['children'] ?? 0)), 
+        kids: parseInt(@json($searchData['kids'] ?? 0)), 
+        infants: parseInt(@json($searchData['infants'] ?? 0)) 
+    };
+    let selectedCabin = @json($searchData['cabin_class'] ?? 'Economy');
+
+    function refreshTravelerDisplay() {
+        const total = counts.adults + counts.children + counts.kids + counts.infants;
+        $('travelerDisplay').textContent = `${total} Traveler${total !== 1 ? 's' : ''}`;
+        $('classDisplay').textContent = selectedCabin;
+    }
+
+    // --- Traveler dropdown toggle ---
+    const travelerGroup = $('travelerGroup');
+    const dropdown = $('travelerDropdown');
+    const doneBtn = $('doneBtn');
+
+    travelerGroup.addEventListener('click', e => { 
+        e.stopPropagation();
+        if (dropdown.contains(e.target)) return;
+        dropdown.classList.toggle('show'); 
+    });
+    dropdown.addEventListener('click', e => e.stopPropagation());
+    doneBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        dropdown.classList.remove('show');
+    });
+    document.addEventListener('click', e => {
+        if (!dropdown.contains(e.target) && !travelerGroup.contains(e.target)) dropdown.classList.remove('show');
+    });
+
+    // --- Counter buttons ---
+    document.querySelectorAll('.t-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.dataset.type;
+            const delta = parseInt(btn.dataset.delta);
+            if (type === 'adults' && counts.adults + delta < 1) return;
+            if (counts[type] + delta < 0) return;
+            counts[type] += delta;
+            $(`${type}Count`).textContent = counts[type];
+            $(`${type}Hidden`).value = counts[type];
+            refreshTravelerDisplay();
+        });
+    });
+
+    // --- Cabin chips ---
+    document.querySelectorAll('.cabin-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.cabin-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            selectedCabin = chip.dataset.class;
+            $('cabinHidden').value = selectedCabin;
+            refreshTravelerDisplay();
+        });
+    });
+
+    // --- Trip type tabs ---
+    const tabs = document.querySelectorAll('.trip-tab');
+    const tripTypeInput = $('tripTypeInput');
+    const returnBox = $('returnBox');
+    const returnDateInput = $('returnDateInput');
+    const depInput = $('depDateInput');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const val = tab.dataset.value;
+            tripTypeInput.value = val;
+            if (val === 'round-way') {
+                returnBox.style.opacity = '1';
+                returnDateInput.disabled = false;
+                if (!returnDateInput.value && depInput.value) {
+                    const d = new Date(depInput.value);
+                    d.setDate(d.getDate() + 4);
+                    returnDateInput.value = d.toISOString().split('T')[0];
+                }
+            } else {
+                returnBox.style.opacity = '0.38';
+                returnDateInput.disabled = true;
+                returnDateInput.value = '';
+            }
+        });
+    });
+
+    // --- Swap airports ---
+    $('swapBtn').addEventListener('click', () => {
+        const from = $('fromInput');
+        const to = $('toInput');
+        const fromCity = $('fromCityName');
+        const toCity = $('toCityName');
+
+        [from.value, to.value] = [to.value, from.value];
+        [fromCity.textContent, toCity.textContent] = [toCity.textContent, fromCity.textContent];
+
+        $('swapBtn').style.transform = 'translateY(-50%) rotate(360deg)';
+        setTimeout(() => { $('swapBtn').style.transform = 'translateY(-50%) rotate(0deg)'; }, 400);
+    });
+
+    // --- Airport autocomplete ---
+    try {
+        fetch('/airports_search.json').then(res => res.json()).then(data => {
+            const dl = $('airportsList');
+            data.forEach(a => {
+                if (a.code) {
+                    const opt = document.createElement('option');
+                    opt.value = a.code;
+                    opt.textContent = `${a.name} (${a.city})`;
+                    dl.appendChild(opt);
+                }
+            });
+        });
+    } catch(e) {}
 
     // ── Modify panel toggle ──
     $('modifyToggle').addEventListener('click', () => {
