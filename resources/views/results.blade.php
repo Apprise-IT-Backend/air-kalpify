@@ -1731,6 +1731,50 @@ document.addEventListener('DOMContentLoaded', function () {
         panel.classList.toggle('open');
     });
 
+    const searchData = @json($searchData);
+    const amyAirports = [
+        { "airport_code": "DAC", "country": "BANGLADESH", "city_name": "Dhaka" },
+        { "airport_code": "CGP", "country": "BANGLADESH", "city_name": "Chittagong" },
+        { "airport_code": "JED", "country": "SAUDI ARABIA", "city_name": "Jeddah" },
+        { "airport_code": "ZYL", "country": "BANGLADESH", "city_name": "Sylhet" },
+        { "airport_code": "MCT", "country": "OMAN", "city_name": "Muscat" },
+        { "airport_code": "DOH", "country": "QATAR", "city_name": "Doha" },
+        { "airport_code": "CXB", "country": "BANGLADESH", "city_name": "Coxs Bazar" },
+        { "airport_code": "RUH", "country": "SAUDI ARABIA", "city_name": "Riyadh" },
+        { "airport_code": "KUL", "country": "MALAYSIA", "city_name": "Kuala Lumpur" },
+        { "airport_code": "DXB", "country": "UNITED ARAB EMIRATES", "city_name": "Dubai" },
+        { "airport_code": "SPD", "country": "BANGLADESH", "city_name": "Saidpur" },
+        { "airport_code": "CCU", "country": "INDIA", "city_name": "Kolkata" },
+        { "airport_code": "MED", "country": "SAUDI ARABIA", "city_name": "Medina" },
+        { "airport_code": "SIN", "country": "SINGAPORE", "city_name": "Singapore" },
+        { "airport_code": "DMM", "country": "SAUDI ARABIA", "city_name": "Dammam" },
+        { "airport_code": "BKK", "country": "THAILAND", "city_name": "Bangkok" },
+        { "airport_code": "MAA", "country": "INDIA", "city_name": "Chennai" },
+        { "airport_code": "SHJ", "country": "UNITED ARAB EMIRATES", "city_name": "Sharjah" },
+        { "airport_code": "FCO", "country": "ITALY", "city_name": "Rome" },
+        { "airport_code": "LHR", "country": "UNITED KINGDOM", "city_name": "London" }
+    ];
+
+    function formatAmyDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${String(date.getDate()).padStart(2, '0')}-${months[date.getMonth()]}-${date.getFullYear()}`;
+    }
+
+    function getAmyAirportString(code) {
+        if (!code) return '';
+        const uc = code.toUpperCase();
+        // Priority to amyAirports list
+        const amy = amyAirports.find(a => a.airport_code === uc);
+        if (amy) return `${amy.city_name} - ${amy.airport_code} - ${amy.country}`;
+        
+        // Fallback to fetch data
+        const airport = airportsData.find(a => a.code === uc);
+        if (airport) return `${airport.city} - ${airport.code} - ${airport.country.toUpperCase()}`;
+        return code;
+    }
+
     $('modifySearchForm')?.addEventListener('submit', function () {
         const btn = $('modifySubmitBtn');
         btn.disabled = true;
@@ -2003,6 +2047,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (offer.provider === 'gozayaan' && offer.search_id && offer.fare_id) {
                     const listUrl = `https://gozayaan.com/flight/list?search_id=${encodeURIComponent(offer.search_id)}&fare_id=${encodeURIComponent(offer.fare_id)}`;
                     window.open(listUrl, '_blank');
+                } else if (offer.provider === 'amybd') {
+                    const tripType = searchData.trip_type === 'round-way' ? 'RT' : 'OW';
+                    const fromStr = getAmyAirportString(searchData.from_location);
+                    const toStr = getAmyAirportString(searchData.to_location);
+                    const depDate = formatAmyDate(searchData.departure_date);
+                    const retDate = searchData.return_date ? formatAmyDate(searchData.return_date) : '';
+                    
+                    let amyUrl = `https://www.amybd.com/flights?trip=${tripType}&umrah=0&combo=0&from=${encodeURIComponent(fromStr)}&to=${encodeURIComponent(toStr)}&dep=${depDate}`;
+                    
+                    if (tripType === 'RT' && retDate) {
+                        amyUrl += `&ret=${retDate}`;
+                    }
+                    
+                    amyUrl += `&ad=${searchData.adults || 1}&ch=${searchData.children || 0}&inf=${searchData.infants || 0}&cls=${searchData.cabin_class || 'Economy'}`;
+                    
+                    window.open(amyUrl, '_blank');
                 } else {
                     alert('Booking for ' + offer.ota_name + ' is coming soon!');
                 }
