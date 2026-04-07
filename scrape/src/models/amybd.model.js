@@ -86,9 +86,13 @@ function stopsLabel(raw) {
 // ── Trip → leg entry ──────────────────────────────────────────────────────────
 
 function buildLeg(trip) {
+  // Use the IATA code (stAirCode) to generate a reliable logo URL from Google Flights CDN
+  const airlineCode = (trip.stAirCode || "").trim().toUpperCase();
+  const logoUrl = airlineCode ? `https://www.gstatic.com/flights/airline_logos/70px/${airlineCode}.png` : null;
+
   return {
     airline:     trip.stAirline  || trip.stAirCode || "Unknown",
-    logo:        null, // AmyBD does not provide logo URLs in the API response
+    logo:        logoUrl,
     flightNo:    trip.fNo        || null,
     departure:   parseTime(trip.fDTime),
     arrival:     parseTime(trip.fATime),
