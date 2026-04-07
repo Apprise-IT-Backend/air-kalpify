@@ -47,7 +47,7 @@ async function scrapeProvider(name, params) {
   let data = null;
   let currentSearchId = params.search_id;
   let attempts = 0;
-  const MAX_ATTEMPTS = 15; // Max 30-45 seconds of polling
+  const MAX_ATTEMPTS = 7; // Max 21 seconds of polling
 
   // Initial scrape (Phase 1)
   const raw = await provider.scrape(params);
@@ -103,8 +103,15 @@ async function saveToDb(params, provider, flights, searchId) {
     
     // Check if record exists for this EXACT search criteria
     const [rows] = await mysqlDb.execute(
-      `SELECT id FROM flights WHERE from_location = ? AND to_location = ? AND departure_date = ? AND provider = ? AND adults = ? AND children = ? AND infants = ? AND cabin_class = ?`,
-      [params.from, params.to, params.date, provider, params.adult, totalChildren, params.infant, params.cabin_class]
+      `SELECT id FROM flights 
+       WHERE from_location = ? AND to_location = ? AND departure_date = ? 
+       AND return_date <=> ? AND trip_type = ? AND provider = ? 
+       AND adults = ? AND children = ? AND infants = ? AND cabin_class = ?`,
+      [
+        params.from, params.to, params.date, 
+        params.returnDate || null, tripType, provider, 
+        params.adult, totalChildren, params.infant, params.cabin_class
+      ]
     );
 
     const resultsJson = JSON.stringify(flights);
