@@ -805,6 +805,91 @@
         }
         .search-cta-field { width: 100%; }
     }
+
+    /* Elegant Airport Results */
+    .airport-results {
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 0;
+        width: 320px;
+        background: white;
+        border-radius: 18px;
+        box-shadow: var(--shadow-strong);
+        z-index: 1100;
+        display: none;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        padding: 8px;
+        text-align: left;
+    }
+
+    .airport-results.show { display: block; }
+
+    .airport-item {
+        padding: 12px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: all 0.2s;
+    }
+
+    .airport-item:hover {
+        background: #f1f5f9;
+        transform: translateY(-1px);
+    }
+
+    .airport-icon {
+        width: 36px;
+        height: 36px;
+        background: #eff6ff;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--blue);
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .airport-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .airport-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .airport-name {
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .airport-code {
+        font-weight: 800;
+        font-size: 0.8rem;
+        color: var(--blue);
+        background: #eff6ff;
+        padding: 2px 8px;
+        border-radius: 6px;
+        letter-spacing: 0.5px;
+    }
+
+    .airport-sub {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 2px;
+    }
 </style>
 
 <!-- ============================
@@ -871,11 +956,12 @@
                         <!-- Origin -->
                         <div class="s-field" style="flex: 1.2; min-width: 140px;">
                             <label><i class="bi bi-geo-alt me-1"></i>From</label>
-                            <input type="text" name="from_location" id="fromInput" value="DAC" placeholder="City or airport" required list="airportsList" autocomplete="off">
+                            <input type="text" name="from_location" id="fromInput" value="DAC" placeholder="City or airport" required autocomplete="off">
                             <div class="s-sub" id="fromCityName">Dhaka, Bangladesh</div>
                             <div class="swap-btn" id="swapBtn" title="Swap airports">
                                 <i class="bi bi-arrow-left-right"></i>
                             </div>
+                            <div class="airport-results" id="fromResults"></div>
                         </div>
 
                         <div class="s-separator"></div>
@@ -883,8 +969,9 @@
                         <!-- Destination -->
                         <div class="s-field" style="flex: 1.2; min-width: 140px;">
                             <label><i class="bi bi-geo me-1"></i>To</label>
-                            <input type="text" name="to_location" id="toInput" value="CXB" placeholder="City or airport" required list="airportsList" autocomplete="off">
+                            <input type="text" name="to_location" id="toInput" value="CXB" placeholder="City or airport" required autocomplete="off">
                             <div class="s-sub" id="toCityName">Cox's Bazar, Bangladesh</div>
+                            <div class="airport-results" id="toResults"></div>
                         </div>
 
                         <div class="s-separator"></div>
@@ -990,8 +1077,6 @@
                         </button>
                     </div>
                 </div>
-
-                <datalist id="airportsList"></datalist>
             </form>
         </div>
     </div>
@@ -1286,20 +1371,79 @@
             setTimeout(() => { document.getElementById('swapBtn').style.transform = 'translateY(-50%) rotate(0deg)'; }, 400);
         });
 
-        // --- Airport autocomplete ---
-        try {
-            const res = await fetch('/airports_search.json');
-            const data = await res.json();
-            const dl = document.getElementById('airportsList');
-            data.forEach(a => {
-                if (a.code) {
-                    const opt = document.createElement('option');
-                    opt.value = a.code;
-                    opt.textContent = `${a.name} (${a.city})`;
-                    dl.appendChild(opt);
+        // --- Airport Autocomplete (Custom Elegant Version) ---
+        let airportsData = [];
+        async function loadAirports() {
+            try {
+                const res = await fetch('/airports_search.json');
+                airportsData = await res.json();
+            } catch(e) { console.error("Failed to load airports", e); }
+        }
+        loadAirports();
+
+        function setupAutocomplete(inputEl, resultsEl, cityDisplayEl) {
+            inputEl.addEventListener('input', () => {
+                const val = inputEl.value.trim().toLowerCase();
+                if (val.length < 1) {
+                    resultsEl.classList.remove('show');
+                    return;
+                }
+
+                const matches = airportsData.filter(a => 
+                    (a.code && a.code.toLowerCase().includes(val)) || 
+                    (a.name && a.name.toLowerCase().includes(val)) || 
+                    (a.city && a.city.toLowerCase().includes(val))
+                ).slice(0, 10);
+
+                if (matches.length > 0) {
+                    renderAirportResults(matches, resultsEl, inputEl, cityDisplayEl);
+                    resultsEl.classList.add('show');
+                } else {
+                    resultsEl.classList.remove('show');
                 }
             });
-        } catch(e) {}
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+                if (!resultsEl.contains(e.target) && e.target !== inputEl) {
+                    resultsEl.classList.remove('show');
+                }
+            });
+        }
+
+        function renderAirportResults(matches, container, inputEl, cityDisplayEl) {
+            container.innerHTML = '';
+            matches.forEach(a => {
+                const item = document.createElement('div');
+                item.className = 'airport-item';
+                item.innerHTML = `
+                    <div class="airport-icon"><i class="bi bi-airplane"></i></div>
+                    <div class="airport-info">
+                        <div class="airport-main">
+                            <span class="airport-name">${a.name}</span>
+                            <span class="airport-code">${a.code}</span>
+                        </div>
+                        <div class="airport-sub">${a.city}, ${a.country}</div>
+                    </div>
+                `;
+                item.addEventListener('click', () => {
+                    inputEl.value = a.code;
+                    if (cityDisplayEl) cityDisplayEl.textContent = `${a.city}, ${a.country}`;
+                    container.classList.remove('show');
+                });
+                container.appendChild(item);
+            });
+        }
+
+        const fromInput = document.getElementById('fromInput');
+        const toInput = document.getElementById('toInput');
+        const fromResults = document.getElementById('fromResults');
+        const toResults = document.getElementById('toResults');
+        const fromCity = document.getElementById('fromCityName');
+        const toCity = document.getElementById('toCityName');
+
+        setupAutocomplete(fromInput, fromResults, fromCity);
+        setupAutocomplete(toInput, toResults, toCity);
 
         // --- Scroll reveal ---
         const revealEls = document.querySelectorAll('.reveal-up');
