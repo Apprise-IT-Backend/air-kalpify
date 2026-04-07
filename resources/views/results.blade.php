@@ -984,6 +984,40 @@ body { background: #f1f5f9 !important; }
     transform: translateY(-1px);
 }
 
+.other-offers-hidden {
+    overflow: hidden;
+    max-height: 0;
+    transition: all 0.35s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.other-offers-hidden.show {
+    max-height: 800px;
+}
+
+.view-more-offers {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--blue);
+    cursor: pointer;
+    text-align: center;
+    padding: 6px 0;
+    transition: all 0.2s;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 8px;
+}
+
+.view-more-offers:hover {
+    background: #eff6ff;
+    color: var(--indigo);
+}
+
 .o-off-left {
     display: flex;
     align-items: center;
@@ -1983,8 +2017,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const othersContainer = clone.querySelector('.other-offers-container');
                 othersContainer.classList.remove('d-none');
                 
-                for (let i = 1; i < f.offers.length; i++) {
-                    const offer = f.offers[i];
+                const createRow = (offer) => {
                     const row = document.createElement('div');
                     row.className = 'other-offer-row';
                     row.innerHTML = `
@@ -1994,10 +2027,38 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                         <div class="o-off-price">${offer.currency} ${Number(offer.price).toLocaleString()}</div>
                     `;
-                    row.addEventListener('click', () => {
+                    row.onclick = (e) => {
+                        e.stopPropagation();
                         handleBookingRedirect(offer);
-                    });
-                    othersContainer.appendChild(row);
+                    };
+                    return row;
+                };
+
+                // Show the first "other" offer (index 1)
+                othersContainer.appendChild(createRow(f.offers[1]));
+
+                // If more exists, hide them in a wrapper
+                if (f.offers.length > 2) {
+                    const hiddenWrap = document.createElement('div');
+                    hiddenWrap.className = 'other-offers-hidden';
+                    
+                    for (let i = 2; i < f.offers.length; i++) {
+                        hiddenWrap.appendChild(createRow(f.offers[i]));
+                    }
+                    othersContainer.appendChild(hiddenWrap);
+
+                    const viewMore = document.createElement('div');
+                    viewMore.className = 'view-more-offers';
+                    viewMore.innerHTML = `<span>View More (${f.offers.length - 2})</span> <i class="bi bi-chevron-down"></i>`;
+                    
+                    viewMore.onclick = (e) => {
+                        e.stopPropagation();
+                        const isShowing = hiddenWrap.classList.toggle('show');
+                        viewMore.innerHTML = isShowing 
+                            ? `<span>View Less</span> <i class="bi bi-chevron-up"></i>`
+                            : `<span>View More (${f.offers.length - 2})</span> <i class="bi bi-chevron-down"></i>`;
+                    };
+                    othersContainer.appendChild(viewMore);
                 }
             }
 
