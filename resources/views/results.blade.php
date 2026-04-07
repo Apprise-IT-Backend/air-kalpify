@@ -617,22 +617,6 @@ body { background: #f1f5f9 !important; }
 }
 .modal-header-custom h5 { color: white; font-weight: 700; margin: 0; }
 .modal-body-custom { padding: 28px; }
-
-    /* ===== MODIFY SEARCH PANEL ===== */
-    .modify-search-panel { 
-        display: none; 
-        background: #f8fafc; 
-        border-bottom: 2px solid #e2e8f0;
-        margin-top: -1px;
-    }
-    .modify-search-panel.open { 
-        display: block; 
-        animation: slideDown 0.3s ease-out;
-    }
-    @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
 </style>
 
 {{-- ─── Search Summary Bar ──────────────────────────── --}}
@@ -660,6 +644,7 @@ body { background: #f1f5f9 !important; }
                         <i class="bi bi-people"></i>
                         {{ $searchData['adults'] ?? $searchData['passengers'] }}A
                         @if(($searchData['children'] ?? 0) > 0), {{ $searchData['children'] }}C @endif
+                        @if(($searchData['kids'] ?? 0) > 0), {{ $searchData['kids'] }}K @endif
                         @if(($searchData['infants'] ?? 0) > 0), {{ $searchData['infants'] }}I @endif
                     </span>
                     <span class="route-meta-chip">
@@ -680,64 +665,59 @@ body { background: #f1f5f9 !important; }
 
     {{-- Modify Search Inline Panel --}}
     <div class="modify-search-panel" id="modifyPanel">
-        <div class="p-3">
+        <div class="container-xl px-0">
             <form action="/search" method="POST" id="modifySearchForm">
                 @csrf
-
-                <div class="row g-2 align-items-end">
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label text-uppercase fw-bold text-secondary" style="font-size: 0.72rem;">From</label>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label">From</label>
                         <input type="text" class="form-control" name="from_location" value="{{ $searchData['from_location'] }}" required>
                     </div>
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label text-uppercase fw-bold text-secondary" style="font-size: 0.72rem;">To</label>
+                    <div class="col-md-2">
+                        <label class="form-label">To</label>
                         <input type="text" class="form-control" name="to_location" value="{{ $searchData['to_location'] }}" required>
                     </div>
-                    <div class="col-lg-2 col-md-4">
-                        <label class="form-label text-uppercase fw-bold text-secondary" style="font-size: 0.72rem;">Departure</label>
+                    <div class="col-md-2">
+                        <label class="form-label">Departure</label>
                         <input type="date" class="form-control" name="departure_date" value="{{ $searchData['departure_date'] }}" required>
                     </div>
-                    <div class="col-lg-2 col-md-4">
-                        <label class="form-label text-uppercase fw-bold text-secondary" style="font-size: 0.72rem;">Return</label>
+                    <div class="col-md-2">
+                        <label class="form-label">Return</label>
                         <input type="date" class="form-control" name="return_date" value="{{ $searchData['return_date'] ?? '' }}">
                     </div>
-                    <div class="col-lg-2 col-md-4">
-                        <button type="submit" class="btn btn-primary w-100 fw-bold" id="modifySubmitBtn" style="height: 42px;">
-                            <i class="bi bi-search me-1"></i> Update
-                        </button>
-                    </div>
-                    <div class="col-12 mt-2">
-                        <div class="d-flex flex-wrap gap-4 px-1">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="text-secondary small fw-bold">Adults:</span>
-                                <input type="number" class="form-control py-1" name="adults" value="{{ $searchData['adults'] }}" min="1" style="width: 70px;">
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="text-secondary small fw-bold">Children:</span>
-                                <input type="number" class="form-control py-1" name="children" value="{{ $searchData['children'] }}" min="0" style="width: 70px;">
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="text-secondary small fw-bold">Infants:</span>
-                                <input type="number" class="form-control py-1" name="infants" value="{{ $searchData['infants'] }}" min="0" style="width: 70px;">
-                            </div>
-                            <div class="ms-lg-auto d-flex align-items-center gap-2">
-                                <span class="text-secondary small fw-bold">Cabin:</span>
-                                <select class="form-select py-1" name="cabin_class" style="width: 140px;">
-                                    <option value="Economy" {{ ($searchData['cabin_class'] ?? 'Economy') == 'Economy' ? 'selected' : '' }}>Economy</option>
-                                    <option value="Business" {{ ($searchData['cabin_class'] ?? '') == 'Business' ? 'selected' : '' }}>Business</option>
-                                    <option value="First" {{ ($searchData['cabin_class'] ?? '') == 'First' ? 'selected' : '' }}>First</option>
-                                </select>
-                            </div>
+                    <div class="col-md-2 col-4">
+                        <label class="form-label">Adults / Children</label>
+                        <div class="d-flex gap-2">
+                            <input type="number" class="form-control px-2" name="adults" value="{{ $searchData['adults'] }}" min="1" title="Adults">
+                            <input type="number" class="form-control px-2" name="children" value="{{ $searchData['children'] }}" min="0" title="Children (5-11)">
                         </div>
                     </div>
+                    <div class="col-md-2 col-4">
+                        <label class="form-label">Kids / Infants</label>
+                        <div class="d-flex gap-2">
+                            <input type="number" class="form-control px-2" name="kids" value="{{ $searchData['kids'] ?? 0 }}" min="0" title="Kids (2-4)">
+                            <input type="number" class="form-control px-2" name="infants" value="{{ $searchData['infants'] }}" min="0" title="Infants">
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <label class="form-label">Cabin</label>
+                        <select class="form-select form-control px-2" name="cabin_class" style="cursor: pointer;">
+                            <option value="Economy" {{ ($searchData['cabin_class'] ?? 'Economy') == 'Economy' ? 'selected' : '' }}>Economy</option>
+                            <option value="Business" {{ ($searchData['cabin_class'] ?? '') == 'Business' ? 'selected' : '' }}>Business</option>
+                            <option value="First" {{ ($searchData['cabin_class'] ?? '') == 'First' ? 'selected' : '' }}>First</option>
+                        </select>
+                    </div>
                     <input type="hidden" name="trip_type" value="{{ $searchData['trip_type'] }}">
+                    <div class="col-md-12 mt-3 text-end d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary fw-bold rounded-3 px-4 py-2" id="modifySubmitBtn">
+                            <i class="bi bi-search me-2"></i>Search Again
+                        </button>
+                    </div>
                 </div>
-
-                <datalist id="airportsList"></datalist>
-            </form>
             </form>
         </div>
     </div>
+</div>
 
 {{-- ─── Main Content ────────────────────────────────── --}}
 <div class="results-layout">
@@ -1225,9 +1205,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return leg;
     }
 
-
-
-        
     // ── Listeners ──
     priceRange.addEventListener('input', applyFilters);
 

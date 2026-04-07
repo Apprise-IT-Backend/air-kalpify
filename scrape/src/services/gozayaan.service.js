@@ -6,8 +6,8 @@ const SEARCH_TIMEOUT = 60000;
 const POLL_INTERVAL = 2000;
 
 function buildUrl(params) {
-  const { from, to, date, returnDate, adult, child, infant, cabin_class } = params;
-  const totalChildren = (child || 0);
+  const { from, to, date, returnDate, adult, child, kids, infant, cabin_class } = params;
+  const totalChildren = (child || 0) + (kids || 0);
   const child_age = params.child_age || ""; // Optional, maybe we add individual ages later
   
   let trips = `${from},${to},${date}`;

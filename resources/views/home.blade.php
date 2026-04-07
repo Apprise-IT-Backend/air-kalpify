@@ -939,7 +939,17 @@
                                         <button type="button" class="t-btn" data-type="children" data-delta="1"><i class="bi bi-plus"></i></button>
                                     </div>
                                 </div>
-
+                                <div class="t-row">
+                                    <div class="t-info d-flex align-items-center gap-3">
+                                        <i class="bi bi-person-heart fs-4 text-secondary"></i>
+                                        <div><h6>Kids</h6><p>From 2 to under 5</p></div>
+                                    </div>
+                                    <div class="t-controls">
+                                        <button type="button" class="t-btn" data-type="kids" data-delta="-1"><i class="bi bi-dash"></i></button>
+                                        <span id="kidsCount">0</span>
+                                        <button type="button" class="t-btn" data-type="kids" data-delta="1"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                </div>
                                 <div class="t-row">
                                     <div class="t-info d-flex align-items-center gap-3">
                                         <i class="bi bi-emoji-smile fs-4 text-secondary"></i>
@@ -965,6 +975,7 @@
 
                                 <input type="hidden" name="adults" id="adultsHidden" value="1">
                                 <input type="hidden" name="children" id="childrenHidden" value="0">
+                                <input type="hidden" name="kids" id="kidsHidden" value="0">
                                 <input type="hidden" name="infants" id="infantsHidden" value="0">
                                 <input type="hidden" name="cabin_class" id="cabinHidden" value="Economy">
                             </div>
@@ -1171,11 +1182,11 @@
     })();
 
     // ===== TRAVELER COUNTS =====
-    let counts = { adults: 1, children: 0, infants: 0 };
+    let counts = { adults: 1, children: 0, kids: 0, infants: 0 };
     let selectedCabin = 'Economy';
 
     function refreshTravelerDisplay() {
-        const total = counts.adults + counts.children + counts.infants;
+        const total = counts.adults + counts.children + counts.kids + counts.infants;
         document.getElementById('travelerDisplay').textContent = `${total} Traveler${total !== 1 ? 's' : ''}`;
         document.getElementById('classDisplay').textContent = selectedCabin;
     }
