@@ -1598,18 +1598,17 @@ document.addEventListener('DOMContentLoaded', function () {
     loadAirports();
 
     function setupAutocomplete(inputEl, resultsEl, cityDisplayEl) {
-        inputEl.addEventListener('input', () => {
+        const handleSearch = () => {
             const val = inputEl.value.trim().toLowerCase();
-            if (val.length < 1) {
-                resultsEl.classList.remove('show');
-                return;
-            }
-
-            const matches = airportsData.filter(a => 
-                (a.code && a.code.toLowerCase().includes(val)) || 
-                (a.name && a.name.toLowerCase().includes(val)) || 
-                (a.city && a.city.toLowerCase().includes(val))
-            ).slice(0, 10);
+            
+            // If empty, show some popular/initial results
+            const matches = val.length < 1 
+                ? airportsData.slice(0, 10)
+                : airportsData.filter(a => 
+                    (a.code && a.code.toLowerCase().includes(val)) || 
+                    (a.name && a.name.toLowerCase().includes(val)) || 
+                    (a.city && a.city.toLowerCase().includes(val))
+                ).slice(0, 10);
 
             if (matches.length > 0) {
                 renderAirportResults(matches, resultsEl, inputEl, cityDisplayEl);
@@ -1617,7 +1616,10 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 resultsEl.classList.remove('show');
             }
-        });
+        };
+
+        inputEl.addEventListener('input', handleSearch);
+        inputEl.addEventListener('focus', handleSearch);
 
         // Close on click outside
         document.addEventListener('click', (e) => {
