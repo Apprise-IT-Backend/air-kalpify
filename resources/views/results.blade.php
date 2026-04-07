@@ -1038,15 +1038,47 @@ body { background: #f1f5f9 !important; }
 
 /* ─── No Results ─────────────────────────────────────────── */
 .no-results-card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 60px 40px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 24px;
+    padding: 80px 40px;
     text-align: center;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.no-results-card i { font-size: 3rem; color: var(--text-3); margin-bottom: 16px; }
-.no-results-card h5 { font-weight: 700; color: var(--text-1); margin-bottom: 8px; }
-.no-results-card p { color: var(--text-2); font-size: 0.9rem; }
+.no-results-icon {
+    width: 90px; height: 90px;
+    background: linear-gradient(135deg, #f0f7ff, #e0f2fe);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 28px;
+    color: var(--blue);
+    font-size: 2.5rem;
+    box-shadow: 0 8px 20px rgba(59,130,246,0.1);
+}
+.no-results-card h5 { font-weight: 800; color: var(--text-1); font-size: 1.6rem; margin-bottom: 12px; letter-spacing: -0.5px; }
+.no-results-card p { color: var(--text-secondary); font-size: 1rem; max-width: 400px; margin: 0 auto 32px; line-height: 1.6; }
+.btn-retry {
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    color: white !important;
+    border: none;
+    padding: 14px 36px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 25px rgba(59,130,246,0.3);
+}
+.btn-retry:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 15px 35px rgba(59,130,246,0.4);
+}
+.btn-retry i { font-size: 1.1rem; }
 
 /* ─── Modal ─────────────────────────────────────────────── */
 .modal-content { border: none; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.25); }
@@ -1362,11 +1394,14 @@ body { background: #f1f5f9 !important; }
 
         {{-- No results --}}
         <div id="noResults" class="no-results-card d-none">
-            <i class="bi bi-airplane d-block mb-3"></i>
+            <div class="no-results-icon">
+                <i class="bi bi-airplane-engines"></i>
+            </div>
             <h5>No Flights Found</h5>
-            <p>Try adjusting your filters or search for a different date.</p>
-            <button class="btn btn-primary rounded-pill px-4 fw-bold mt-2" onclick="location.reload()">
-                <i class="bi bi-arrow-clockwise me-2"></i>Retry
+            <p>We couldn't find any flights matching your criteria. Try adjusting your filters or searching for a different date.</p>
+            <button class="btn-retry" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Retry Search</span>
             </button>
         </div>
 
