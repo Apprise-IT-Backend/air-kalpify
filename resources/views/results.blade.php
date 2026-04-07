@@ -550,10 +550,60 @@ body { background: #f1f5f9 !important; }
     padding: 20px 22px;
     background: #fafcff;
     border-left: 1px solid var(--border);
-    min-width: 180px;
+    min-width: 220px;
     text-align: right;
     gap: 10px;
 }
+
+.cheapest-offer-block {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.other-offers-container {
+    border-top: 1px dashed var(--border);
+    padding-top: 12px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.other-offer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.other-offer-row:hover {
+    border-color: var(--blue);
+    background: #f8fafc;
+    transform: translateY(-1px);
+}
+
+.o-off-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.o-off-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+}
+
+.o-off-name { font-size: 0.75rem; font-weight: 700; color: var(--text-1); }
+.o-off-price { font-size: 0.8rem; font-weight: 800; color: var(--blue); }
 .price-from { font-size: 0.72rem; color: var(--text-3); font-weight: 500; }
 .price-amount {
     font-size: 1.5rem;
@@ -842,16 +892,19 @@ body { background: #f1f5f9 !important; }
                 <div class="return-leg-container d-none"></div>
             </div>
             <div class="flight-price-col">
-                <div>
-                    <div class="price-from">Total price</div>
-                    <div class="price-amount">
-                        <span class="price-currency currency-label"></span><span class="price-value"></span>
+                <div class="cheapest-offer-block">
+                    <div>
+                        <div class="price-from text-end">Best Price</div>
+                        <div class="price-amount text-end">
+                            <span class="price-currency currency-label"></span><span class="price-value"></span>
+                        </div>
                     </div>
+                    <span class="provider-tag provider-label"></span>
+                    <button class="btn-book select-btn">
+                        Book Now <i class="bi bi-arrow-right"></i>
+                    </button>
                 </div>
-                <span class="provider-tag provider-label"></span>
-                <button class="btn-book select-btn">
-                    Book Now <i class="bi bi-arrow-right"></i>
-                </button>
+                <div class="other-offers-container d-none"></div>
             </div>
         </div>
     </div>
@@ -1009,17 +1062,78 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Normalize "10:15 AM" / "10:15" → "10:15" (24h) for consistent matching
+    function normTime(t) {
+        if (!t) return '';
+        t = t.trim();
+        const ampm = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+        if (ampm) {
+            let h = parseInt(ampm[1]);
+            const m = ampm[2];
+            const p = ampm[3].toUpperCase();
+            if (p === 'AM' && h === 12) h = 0;
+            if (p === 'PM' && h !== 12) h += 12;
+            return `${String(h).padStart(2,'0')}:${m}`;
+        }
+        return t;
+    }
+
     function processNewFlights(newFlights) {
         if (!newFlights || newFlights.length === 0) return;
-        const existingKeys = new Set(allFlights.map(f =>
-            `${f.ota_name}_${f.price}_${f.airline}_${f.departure_time}_${f.is_round_trip}`
-        ));
-        const fresh = newFlights.filter(f => {
-            const key = `${f.ota_name}_${f.price}_${f.airline}_${f.departure_time}_${f.is_round_trip}`;
-            return !existingKeys.has(key);
+        let hasNew = false;
+        newFlights.forEach(f => {
+            // Key = dep_time + arr_time + stops + round_trip + return_dep_time
+            // Does NOT include airline name — provider spellings differ
+            const depN = normTime(f.departure_time);
+            const arrN = normTime(f.arrival_time);
+            const retN = (f.is_round_trip && f.return_leg) ? normTime(f.return_leg.departure_time) : '';
+            const flightKey = `${depN}_${arrN}_${f.stops_count}_${f.is_round_trip ? 1 : 0}_${retN}`;
+            const existingGroupIndex = allFlights.findIndex(g => g.flightKey === flightKey);
+            
+            if (existingGroupIndex >= 0) {
+                const existingGroup = allFlights[existingGroupIndex];
+                const existingOffer = existingGroup.offers.find(o => o.ota_name === f.ota_name && o.price === f.price);
+                if (!existingOffer) {
+                    existingGroup.offers.push({
+                        ota_name: f.ota_name,
+                        price: f.price,
+                        currency: f.currency,
+                        ota_color: f.ota_color,
+                        provider: f.provider,
+                        search_id: f.search_id,
+                        sequence_code: f.sequence_code,
+                        fare_id: f.fare_id
+                    });
+                    existingGroup.offers.sort((a,b) => a.price - b.price);
+                    
+                    existingGroup.price = existingGroup.offers[0].price;
+                    existingGroup.currency = existingGroup.offers[0].currency;
+                    existingGroup.ota_name = existingGroup.offers[0].ota_name;
+                    existingGroup.ota_color = existingGroup.offers[0].ota_color;
+                    existingGroup.provider = existingGroup.offers[0].provider;
+                    hasNew = true;
+                }
+            } else {
+                const newGroup = {
+                    ...f,
+                    flightKey: flightKey,
+                    offers: [{
+                        ota_name: f.ota_name,
+                        price: f.price,
+                        currency: f.currency,
+                        ota_color: f.ota_color,
+                        provider: f.provider,
+                        search_id: f.search_id,
+                        sequence_code: f.sequence_code,
+                        fare_id: f.fare_id
+                    }]
+                };
+                allFlights.push(newGroup);
+                hasNew = true;
+            }
         });
-        if (fresh.length > 0) {
-            allFlights = [...allFlights, ...fresh];
+
+        if (hasNew) {
             clearSkeletons();
             renderOTAFilters();
             applyFilters();
@@ -1046,17 +1160,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderOTAFilters() {
-        const uniqueOTAs = [...new Set(allFlights.map(f => f.ota_name).filter(Boolean))];
+        const otaSet = new Set();
         const colors = {};
-        allFlights.forEach(f => {
-            if (f.ota_name) colors[f.ota_name] = f.ota_color;
+        allFlights.forEach(g => {
+            g.offers.forEach(o => {
+                if (o.ota_name) {
+                    otaSet.add(o.ota_name);
+                    colors[o.ota_name] = o.ota_color;
+                }
+            });
         });
+        const uniqueOTAs = [...otaSet];
 
         otaFiltersContainer.innerHTML = '';
         uniqueOTAs.forEach(ota => {
             if (!ota) return;
             const slug = String(ota).toLowerCase().replace(/\s+/g, '-');
-            const count = allFlights.filter(f => f.ota_name === ota).length;
+            const count = allFlights.filter(g => g.offers.some(o => o.ota_name === ota)).length;
             const wrap = document.createElement('div');
             wrap.className = 'ota-item';
             wrap.innerHTML = `
@@ -1085,13 +1205,26 @@ document.addEventListener('DOMContentLoaded', function () {
         const stopsDirect = $('direct').checked;
         const stopsOnePlus = $('onePlusStop').checked;
 
-        let filtered = allFlights.filter(f => {
-            const matchesPrice = f.price <= maxPrice;
-            const matchesOta = activeOtas.length === 0 || activeOtas.includes(f.ota_name);
+        let filtered = allFlights.map(g => {
+            const validOffers = activeOtas.length === 0 ? g.offers : g.offers.filter(o => activeOtas.includes(o.ota_name));
+            if (validOffers.length === 0) return null;
+
+            return {
+                ...g,
+                offers: validOffers,
+                price: validOffers[0].price,
+                currency: validOffers[0].currency,
+                ota_name: validOffers[0].ota_name,
+                ota_color: validOffers[0].ota_color,
+                provider: validOffers[0].provider
+            };
+        }).filter(g => {
+            if (!g) return false;
+            const matchesPrice = g.price <= maxPrice;
             let matchesStops = false;
-            if (stopsDirect && f.stops_count === 0) matchesStops = true;
-            if (stopsOnePlus && f.stops_count >= 1) matchesStops = true;
-            return matchesPrice && matchesOta && matchesStops;
+            if (stopsDirect && g.stops_count === 0) matchesStops = true;
+            if (stopsOnePlus && g.stops_count >= 1) matchesStops = true;
+            return matchesPrice && matchesStops;
         });
 
         // Sort
@@ -1133,20 +1266,44 @@ document.addEventListener('DOMContentLoaded', function () {
             const btn = clone.querySelector('.select-btn');
             btn.style.background = f.ota_color;
 
-            // Handle booking redirects
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (f.provider === 'sharetrip' && f.search_id && f.sequence_code) {
-                    const bookingUrl = `https://sharetrip.net/flight-booking?searchId=${encodeURIComponent(f.search_id)}&sequenceCode=${encodeURIComponent(f.sequence_code)}`;
+            const handleBookingRedirect = (offer) => {
+                if (offer.provider === 'sharetrip' && offer.search_id && offer.sequence_code) {
+                    const bookingUrl = `https://sharetrip.net/flight-booking?searchId=${encodeURIComponent(offer.search_id)}&sequenceCode=${encodeURIComponent(offer.sequence_code)}`;
                     window.open(bookingUrl, '_blank');
-                } else if (f.provider === 'gozayaan' && f.search_id && f.fare_id) {
-                    // GoZayaan works better loading the list with parameters to init session
-                    const listUrl = `https://gozayaan.com/flight/list?search_id=${encodeURIComponent(f.search_id)}&fare_id=${encodeURIComponent(f.fare_id)}`;
+                } else if (offer.provider === 'gozayaan' && offer.search_id && offer.fare_id) {
+                    const listUrl = `https://gozayaan.com/flight/list?search_id=${encodeURIComponent(offer.search_id)}&fare_id=${encodeURIComponent(offer.fare_id)}`;
                     window.open(listUrl, '_blank');
                 } else {
-                    alert('Booking for ' + f.ota_name + ' is coming soon!');
+                    alert('Booking for ' + offer.ota_name + ' is coming soon!');
                 }
+            };
+
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleBookingRedirect(f.offers[0]);
             });
+
+            if (f.offers.length > 1) {
+                const othersContainer = clone.querySelector('.other-offers-container');
+                othersContainer.classList.remove('d-none');
+                
+                for (let i = 1; i < f.offers.length; i++) {
+                    const offer = f.offers[i];
+                    const row = document.createElement('div');
+                    row.className = 'other-offer-row';
+                    row.innerHTML = `
+                        <div class="o-off-left">
+                            <div class="o-off-dot" style="background: ${offer.ota_color}"></div>
+                            <span class="o-off-name">${offer.ota_name}</span>
+                        </div>
+                        <div class="o-off-price">${offer.currency} ${Number(offer.price).toLocaleString()}</div>
+                    `;
+                    row.addEventListener('click', () => {
+                        handleBookingRedirect(offer);
+                    });
+                    othersContainer.appendChild(row);
+                }
+            }
 
             clone.querySelector('.departure-leg-container').appendChild(buildLeg(f, false, legTpl));
 

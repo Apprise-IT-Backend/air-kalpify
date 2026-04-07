@@ -55,24 +55,35 @@ async function scrapeProvider(name, params) {
   data = provider.format(raw, params);
   
   // If not completed and we have a search_id, poll until done (for GoZayaan/ShareTrip)
-  console.log("Data:", data);
   if (!data.isCompleted && data.search_id) {
     currentSearchId = data.search_id;
     console.log(`[${name}] Polling until completed (ID: ${currentSearchId})...`);
-    
+
+    // Use a Map keyed by price+departure so we accumulate across polls without duplicates
+    const flightMap = new Map();
+    (data.flights || []).forEach(f => {
+      const key = `${f.totalPrice}_${f.departure?.departure}_${f.departure?.airline}`;
+      flightMap.set(key, f);
+    });
+
     while (!data.isCompleted && attempts < MAX_ATTEMPTS) {
       attempts++;
       await new Promise(r => setTimeout(r, 3000)); // Poll every 3s
-      
+
       const pollRaw = await provider.scrape({ ...params, search_id: currentSearchId });
       const pollData = provider.format(pollRaw, params);
-      
-      // Update data with new flights and status
+
+      // Merge new flights into the map (never overwrite with fewer results)
       if (pollData.flights && pollData.flights.length > 0) {
-          data.flights = pollData.flights;
+        pollData.flights.forEach(f => {
+          const key = `${f.totalPrice}_${f.departure?.departure}_${f.departure?.airline}`;
+          flightMap.set(key, f);
+        });
       }
+
       data.isCompleted = pollData.isCompleted;
-      console.log(`[${name}] Poll attempt ${attempts}: Found ${data.flights.length} flights (Completed: ${data.isCompleted})`);
+      data.flights = [...flightMap.values()];
+      console.log(`[${name}] Poll #${attempts}: ${data.flights.length} total flights (Completed: ${data.isCompleted})`);
     }
   }
   
