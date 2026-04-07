@@ -1,7 +1,9 @@
 const gozayaanService = require("../services/gozayaan.service");
 const sharetripService = require("../services/sharetrip.service");
+const amybdService    = require("../services/amybd.service");
 const gozayaanModel = require("../models/gozayaan.model");
 const sharetripModel = require("../models/sharetrip.model");
+const amybdModel    = require("../models/amybd.model");
 const db = require("../utils/db");
 
 const providers = {
@@ -12,6 +14,10 @@ const providers = {
   sharetrip: {
     scrape: sharetripService.scrapeFlights,
     format: sharetripModel.formatFlightData,
+  },
+  amybd: {
+    scrape: amybdService.scrapeFlights,
+    format: amybdModel.formatFlightData,
   },
 };
 
@@ -198,7 +204,7 @@ function healthCheck(req, res) {
       child: "Number of children (default: 0)",
       infant: "Number of infants (default: 0)",
       cabin_class: "Economy | Business | First (default: Economy)",
-      provider: "gozayaan | sharetrip (optional, omit to query all)",
+      provider: "gozayaan | sharetrip | amybd (optional, omit to query all)",
     },
   });
 }

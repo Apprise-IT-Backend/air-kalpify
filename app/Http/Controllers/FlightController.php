@@ -49,7 +49,7 @@ class FlightController extends Controller
             return redirect('/')->withErrors(['error' => 'Please perform a search first.']);
         }
 
-        $providers = ['gozayaan', 'sharetrip'];
+        $providers = ['gozayaan', 'sharetrip', 'amybd'];
 
         // Return the view immediately without fetching
         return view('results', compact('searchData', 'providers'));
@@ -300,14 +300,21 @@ class FlightController extends Controller
             $flatFlights[] = [
                 'airline'          => $flight['departure']['airline'] ?? 'Unknown Airline',
                 'airline_logo'     => $flight['departure']['logo'] ?? null,
+                'flight_no'        => $flight['departure']['flightNo'] ?? null,
                 'departure_time'   => $depTimeParsed,
                 'arrival_time'     => $arrTimeParsed,
+                'origin'           => $flight['departure']['origin']      ?? null,
+                'destination'      => $flight['departure']['destination'] ?? null,
                 'duration'         => $durationStr,
                 'duration_minutes' => $durationMinutes,
                 'price'            => $price,
                 'currency'         => $flight['currency'] ?? 'BDT',
                 'stops'            => $stopsStr,
                 'stops_count'      => $stopsCount,
+                'baggage'          => $flight['departure']['baggage']      ?? null,
+                'booking_class'    => $flight['departure']['bookingClass'] ?? null,
+                'seats_left'       => $flight['departure']['seatsLeft']    ?? null,
+                'refundable'       => $flight['departure']['refundable']   ?? null,
                 'ota_name'         => $otaName,
                 'ota_color'        => $otaColor,
                 'is_round_trip'    => !is_null($returnLeg),
@@ -332,6 +339,7 @@ class FlightController extends Controller
         $names = [
             'gozayaan'     => 'GoZayaan',
             'sharetrip'    => 'ShareTrip',
+            'amybd'        => 'AmyBD',
             'flightexpert' => 'FlightExpert',
             'airtickets'   => 'AirTickets',
         ];
@@ -343,6 +351,7 @@ class FlightController extends Controller
         $colors = [
             'gozayaan'     => '#00b4d8',
             'sharetrip'    => '#f77f00',
+            'amybd'        => '#e63946',
             'flightexpert' => '#06d6a0',
             'airtickets'   => '#7209b7',
         ];
