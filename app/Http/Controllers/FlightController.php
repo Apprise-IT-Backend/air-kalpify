@@ -126,7 +126,7 @@ class FlightController extends Controller
                 ->where('children', ($searchData['children'] ?? 0) + ($searchData['kids'] ?? 0))
                 ->where('infants', $searchData['infants'] ?? 0)
                 ->where('cabin_class', $searchData['cabin_class'] ?? 'Economy')
-                ->where('search_at', '>=', now()->subMinutes(30))
+                ->where('search_at', '>=', now()->subMinutes(60))
                 ->first();
 
             if ($cachedResult) {
@@ -175,6 +175,7 @@ class FlightController extends Controller
                         ->where('children', ($searchData['children'] ?? 0) + ($searchData['kids'] ?? 0))
                         ->where('infants', $searchData['infants'] ?? 0)
                         ->where('cabin_class', $searchData['cabin_class'] ?? 'Economy')
+                        ->where('search_at', '>=', now()->subMinutes(60))
                         ->orderBy('search_at', 'desc')
                         ->first();
                     
@@ -204,6 +205,7 @@ class FlightController extends Controller
                     ->where('children', ($searchData['children'] ?? 0) + ($searchData['kids'] ?? 0))
                     ->where('infants', $searchData['infants'] ?? 0)
                     ->where('cabin_class', $searchData['cabin_class'] ?? 'Economy')
+                    ->where('search_at', '>=', now()->subMinutes(60))
                     ->orderBy('search_at', 'desc')
                     ->first();
 
