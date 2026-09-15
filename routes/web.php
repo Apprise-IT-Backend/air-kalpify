@@ -10,5 +10,5 @@ Route::post('/search', [FlightController::class, 'search']);
 Route::get('/results', [FlightController::class, 'results']);
 Route::get('/api/search-flights/{provider}', [FlightController::class, 'fetchProvider']);
 Route::get('/api/db-flights/{provider}', [FlightController::class, 'fetchProviderFromDb']);
-
+Route::post('/api/flight/search-data', [FlightController::class, 'searchData']);
 Route::post('/alerts', [AlertController::class, 'store']);

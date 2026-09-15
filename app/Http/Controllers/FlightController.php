@@ -40,6 +40,35 @@ class FlightController extends Controller
 
         return redirect('/results');
     }
+    
+   public function searchData(Request $request)
+{ 
+    return response()->json([
+        [
+            "airline" => "Biman Bangladesh Airlines",
+            "airline_logo" => "https://storage.googleapis.com/gz-flight-prod-booking-data/carrier/airline-logos/BG.png",
+            "price" => 6049,
+            "currency" => "BDT",
+            "provider" => "gozayaan"
+        ],
+        [
+            "airline" => "NOVOAIR",
+            "airline_logo" => "https://storage.googleapis.com/gz-flight-prod-booking-data/carrier/airline-logos/VQ.png",
+            "price" => 6149,
+            "currency" => "BDT",
+            "provider" => "ShareTrip"
+        ],
+        [
+            "airline" => "Air Astra",
+            "airline_logo" => "https://storage.googleapis.com/gz-flight-prod-booking-data/carrier/airline-logos/2A.png",
+            "price" => 6153,
+            "currency" => "BDT",
+            "provider" => "AmyBD"
+        ]
+    ]);
+}
+
+
 
     public function results(Request $request)
     {

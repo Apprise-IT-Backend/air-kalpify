@@ -4,7 +4,7 @@ require('dotenv').config();
 const config = {
   host: process.env.DB_HOST || '127.0.0.1',
   user: process.env.DB_USER || process.env.DB_USERNAME || 'root',
-  password: process.env.DB_PASS || process.env.DB_PASSWORD || '',
+  password: process.env.DB_PASS || process.env.DB_PASSWORD || 'Am!jan1na',
   database: process.env.DB_NAME || process.env.DB_DATABASE || 'airticket',
   port: parseInt(process.env.DB_PORT || 3306),
   waitForConnections: true,
